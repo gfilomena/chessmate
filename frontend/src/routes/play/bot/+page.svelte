@@ -12,24 +12,23 @@
 		if (!$authLoading && !$user) goto('/login');
 	});
 
-	// ── ELO levels ────────────────────────────────────────────────────────────
-	const ELO_LEVELS = [
-		{ elo: 200,  label: 'Principiante' },
-		{ elo: 400,  label: 'Novizio'       },
-		{ elo: 600,  label: 'Dilettante'    },
-		{ elo: 800,  label: 'Intermedio'    },
-		{ elo: 1000, label: 'Club'          },
-		{ elo: 1200, label: 'Avanzato'      },
-		{ elo: 1400, label: 'Esperto'       },
-		{ elo: 1600, label: 'Cand. Master'  },
-		{ elo: 1800, label: 'Master'        },
-		{ elo: 2000, label: 'Gran Maestro'  },
+	// ── Bot roster ────────────────────────────────────────────────────────────
+	const BOTS = [
+		{ id: 'matteo',   name: 'Matteo',   elo:  400, stars: 1, piece: '♟', badge: 'Principiante', color: '#4a9e5c', quote: 'Ama il cavallo, non sa perché.'            },
+		{ id: 'sofia',    name: 'Sofia',    elo:  700, stars: 2, piece: '♞', badge: 'Novizio',       color: '#7aaa3e', quote: 'Ha letto mezza pagina di teoria.'           },
+		{ id: 'luca',     name: 'Luca',     elo: 1000, stars: 2, piece: '♝', badge: 'Intermedio',   color: '#c9a227', quote: 'Gioca e4 perché lo fanno tutti.'             },
+		{ id: 'giulia',   name: 'Giulia',   elo: 1300, stars: 3, piece: '♜', badge: 'Club',         color: '#d4811e', quote: 'Conosce la Siciliana a memoria.'             },
+		{ id: 'marco',    name: 'Marco',    elo: 1500, stars: 3, piece: '♛', badge: 'Avanzato',     color: '#c95f2f', quote: 'Analizza le partite la sera.'                },
+		{ id: 'elena',    name: 'Elena',    elo: 1700, stars: 4, piece: '♚', badge: 'Esperto',      color: '#b84040', quote: 'Punisce ogni errore senza pietà.'            },
+		{ id: 'riccardo', name: 'Riccardo', elo: 2000, stars: 4, piece: '♕', badge: 'Maestro',      color: '#8040a0', quote: 'Ha vinto tornei regionali.'                  },
+		{ id: 'magnus',   name: 'Magnus',   elo: 2500, stars: 5, piece: '♔', badge: 'Gran Maestro', color: '#2040a0', quote: 'Pressoché imbattibile. Buona fortuna.'       },
 	] as const;
 
 	// ── Setup state ───────────────────────────────────────────────────────────
 	let phase: 'setup' | 'playing' = $state('setup');
-	let selectedElo = $state(1000);
+	let selectedBotId = $state('marco');
 	let selectedColor: 'white' | 'black' | 'random' = $state('white');
+	const selectedBot = $derived(BOTS.find(b => b.id === selectedBotId) ?? BOTS[4]);
 
 	// ── Game state ────────────────────────────────────────────────────────────
 	let playerColor: 'white' | 'black' = $state('white');
@@ -138,8 +137,6 @@
 	// In modalità revisione il board non accetta mosse
 	const canMove = $derived(!isReviewing && isPlayerTurn);
 
-	const selectedLevel = $derived(ELO_LEVELS.find(l => l.elo === selectedElo) ?? ELO_LEVELS[4]);
-
 	const movePairs = $derived(buildMovePairs(moveHistory));
 
 	function buildMovePairs(history: string[]) {
@@ -206,7 +203,7 @@
 		isThinking = true;
 
 		try {
-			const uciMove = await engine.getBestMove(chessGame.fen(), selectedElo);
+			const uciMove = await engine.getBestMove(chessGame.fen(), selectedBot.elo);
 			if (!uciMove) { isThinking = false; return; }
 
 			const from  = uciMove.slice(0, 2);
@@ -293,69 +290,52 @@
 		<div class="setup-card">
 			<div class="setup-header">
 				<span class="setup-icon">🤖</span>
-				<h1>Gioca contro il Bot</h1>
-				<p class="setup-sub">Sfida Stockfish al livello che preferisci</p>
+				<h1>Scegli il tuo avversario</h1>
+				<p class="setup-sub">Tutti i bot usano Stockfish — il motore più forte al mondo</p>
 			</div>
+
+			<!-- Bot selection -->
+			<section class="setup-section">
+				<h2>Avversario</h2>
+				<div class="bots-grid">
+					{#each BOTS as bot}
+						<button
+							class="bot-card"
+							class:active={selectedBotId === bot.id}
+							onclick={() => selectedBotId = bot.id}
+							style="--bot-color:{bot.color}"
+						>
+							<span class="bot-piece">{bot.piece}</span>
+							<span class="bot-name">{bot.name}</span>
+							<span class="bot-stars">{'★'.repeat(bot.stars)}{'☆'.repeat(5 - bot.stars)}</span>
+							<span class="bot-badge">{bot.badge}</span>
+							<span class="bot-quote">"{bot.quote}"</span>
+							<span class="bot-elo">ELO {bot.elo}</span>
+						</button>
+					{/each}
+				</div>
+			</section>
 
 			<!-- Color selection -->
 			<section class="setup-section">
 				<h2>Scegli il tuo colore</h2>
 				<div class="color-row">
-					<button
-						class="color-btn"
-						class:active={selectedColor === 'white'}
-						onclick={() => selectedColor = 'white'}
-					>
-						<span class="color-piece">♔</span>
-						Bianco
+					<button class="color-btn" class:active={selectedColor === 'white'} onclick={() => selectedColor = 'white'}>
+						<span class="color-piece">♔</span>Bianco
 					</button>
-					<button
-						class="color-btn"
-						class:active={selectedColor === 'black'}
-						onclick={() => selectedColor = 'black'}
-					>
-						<span class="color-piece dark">♚</span>
-						Nero
+					<button class="color-btn" class:active={selectedColor === 'black'} onclick={() => selectedColor = 'black'}>
+						<span class="color-piece dark">♚</span>Nero
 					</button>
-					<button
-						class="color-btn"
-						class:active={selectedColor === 'random'}
-						onclick={() => selectedColor = 'random'}
-					>
-						<span class="color-piece">🎲</span>
-						Casuale
+					<button class="color-btn" class:active={selectedColor === 'random'} onclick={() => selectedColor = 'random'}>
+						<span class="color-piece">🎲</span>Casuale
 					</button>
 				</div>
-			</section>
-
-			<!-- ELO level selection -->
-			<section class="setup-section">
-				<h2>Livello di difficoltà</h2>
-				<div class="elo-grid">
-					{#each ELO_LEVELS as level}
-						<button
-							class="elo-btn"
-							class:active={selectedElo === level.elo}
-							onclick={() => selectedElo = level.elo}
-						>
-							<span class="elo-num">{level.elo}</span>
-							<span class="elo-lbl">{level.label}</span>
-						</button>
-					{/each}
-				</div>
-				<p class="selected-info">
-					Livello selezionato: <strong>{selectedLevel.elo} ELO</strong> · {selectedLevel.label}
-				</p>
 			</section>
 
 			<!-- Start button -->
-			<button
-				class="btn btn-primary start-btn"
-				onclick={startGame}
-				disabled={!engineReady}
-			>
+			<button class="btn btn-primary start-btn" onclick={startGame} disabled={!engineReady}>
 				{#if engineReady}
-					▶ Inizia partita
+					▶ Sfida {selectedBot.name}
 				{:else}
 					Caricamento motore...
 				{/if}
@@ -375,8 +355,11 @@
 			<!-- Opponent row (top) -->
 			<div class="player-row">
 				<div class="player-info">
-					<span class="player-name">🤖 Bot</span>
-					<span class="player-elo">ELO {selectedElo} · {selectedLevel.label}</span>
+					<span class="player-name">{selectedBot.piece} {selectedBot.name}</span>
+					<span class="player-elo">
+						<span class="inline-badge" style="background:{selectedBot.color}">{selectedBot.badge}</span>
+						· ELO {selectedBot.elo}
+					</span>
 				</div>
 				{#if isThinking}
 					<div class="thinking-badge">
@@ -604,47 +587,86 @@
 }
 .color-piece.dark { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.7)); }
 
-/* ELO grid */
-.elo-grid {
+/* Bot grid */
+.bots-grid {
 	display: grid;
-	grid-template-columns: repeat(5, 1fr);
-	gap: 0.5rem;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 0.6rem;
 }
-.elo-btn {
+.bot-card {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	gap: 0.2rem;
-	padding: 0.6rem 0.25rem;
+	padding: 0.75rem 0.4rem 0.6rem;
 	background: var(--bg);
 	border: 2px solid var(--border);
-	border-radius: 8px;
+	border-radius: 10px;
 	cursor: pointer;
-	color: var(--text);
-	transition: border-color 0.15s, background 0.15s;
-}
-.elo-btn:hover { border-color: var(--accent); }
-.elo-btn.active {
-	border-color: var(--accent);
-	background: color-mix(in srgb, var(--accent) 14%, transparent);
-}
-.elo-num {
-	font-size: 0.95rem;
-	font-weight: 700;
-}
-.elo-lbl {
-	font-size: 0.65rem;
-	color: var(--text-muted);
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	max-width: 100%;
-}
-.selected-info {
-	margin-top: 0.75rem;
 	text-align: center;
-	font-size: 0.9rem;
+	transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.bot-card:hover {
+	border-color: var(--bot-color, var(--accent));
+	transform: translateY(-1px);
+}
+.bot-card.active {
+	border-color: var(--bot-color, var(--accent));
+	background: color-mix(in srgb, var(--bot-color, var(--accent)) 10%, transparent);
+}
+.bot-piece {
+	font-size: 1.7rem;
+	line-height: 1;
+	color: var(--bot-color, var(--accent));
+	filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+}
+.bot-name {
+	font-size: 0.82rem;
+	font-weight: 700;
+	color: var(--text);
+	margin-top: 0.1rem;
+}
+.bot-stars {
+	font-size: 0.6rem;
+	color: var(--bot-color, var(--accent));
+	letter-spacing: 1px;
+}
+.bot-badge {
+	font-size: 0.55rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	padding: 0.12rem 0.45rem;
+	border-radius: 20px;
+	background: var(--bot-color, var(--accent));
+	color: #fff;
+	white-space: nowrap;
+}
+.bot-quote {
+	font-size: 0.58rem;
 	color: var(--text-muted);
+	font-style: italic;
+	line-height: 1.3;
+	margin-top: 0.15rem;
+	display: none; /* visibile solo su card attiva */
+}
+.bot-card.active .bot-quote { display: block; }
+.bot-elo {
+	font-size: 0.6rem;
+	color: var(--text-muted);
+	margin-top: 0.1rem;
+}
+/* Badge inline nella riga giocatore */
+.inline-badge {
+	display: inline-block;
+	font-size: 0.65rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	padding: 0.1rem 0.4rem;
+	border-radius: 20px;
+	color: #fff;
+	vertical-align: middle;
 }
 
 .start-btn {
@@ -906,10 +928,11 @@
 	.setup-page {
 		padding: 1rem 0.75rem 2rem;
 	}
-	/* ELO grid: 2 colonne su mobile */
-	.elo-grid {
+	/* Bot grid: 2 colonne su mobile */
+	.bots-grid {
 		grid-template-columns: repeat(2, 1fr);
 	}
+	.bot-card.active .bot-quote { display: block; }
 
 	/* ── Game layout mobile ── */
 	.game-layout {
