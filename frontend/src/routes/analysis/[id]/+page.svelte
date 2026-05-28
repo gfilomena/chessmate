@@ -254,16 +254,7 @@
 {:else}
 <div class="analysis-layout">
 
-	<!-- Eval bar verticale -->
-	<div class="eval-bar" title="{displayEvalText}">
-		<div class="eval-black" style="height: {100 - displayEvalPercent}%"></div>
-		<div class="eval-white" style="height: {displayEvalPercent}%"></div>
-		<span class="eval-label" style="bottom:{displayEvalPercent}%">
-			{displayEvalText}
-		</span>
-	</div>
-
-	<!-- Scacchiera -->
+	<!-- Scacchiera + eval bar -->
 	<div class="board-col">
 		<div class="game-info">
 			<span class="player-tag black-tag">♟ {game.black_username} ({game.black_elo})</span>
@@ -271,15 +262,26 @@
 			<span class="player-tag white-tag">♔ {game.white_username} ({game.white_elo})</span>
 		</div>
 
-		<Board
-			fen={positions[currentIdx] ?? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'}
-			playerColor="white"
-			isMyTurn={false}
-			lastMove={null}
-			onMove={() => {}}
-			arrows={boardArrows}
-			squareBadge={squareBadge}
-		/>
+		<div class="board-row">
+			<!-- Eval bar verticale — stessa altezza della scacchiera -->
+			<div class="eval-bar" title="{displayEvalText}">
+				<div class="eval-black" style="height: {100 - displayEvalPercent}%"></div>
+				<div class="eval-white" style="height: {displayEvalPercent}%"></div>
+				<span class="eval-label" style="bottom:{displayEvalPercent}%">
+					{displayEvalText}
+				</span>
+			</div>
+
+			<Board
+				fen={positions[currentIdx] ?? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'}
+				playerColor="white"
+				isMyTurn={false}
+				lastMove={null}
+				onMove={() => {}}
+				arrows={boardArrows}
+				squareBadge={squareBadge}
+			/>
+		</div>
 
 		<!-- Navigazione -->
 		<div class="nav-controls">
@@ -431,18 +433,30 @@
 		justify-content: center;
 	}
 
-	/* ── Eval bar ── */
+	/* ── Board column ── */
+	.board-col {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	/* Riga che contiene eval-bar + scacchiera, allineati in altezza */
+	.board-row {
+		display: flex;
+		gap: 0.5rem;
+		align-items: stretch;
+	}
+
+	/* ── Eval bar — stessa altezza della scacchiera (stretch) ── */
 	.eval-bar {
-		width: 20px;
-		height: 480px;
+		width: 36px;
+		flex-shrink: 0;
 		border-radius: 4px;
 		overflow: hidden;
 		position: relative;
 		border: 1px solid var(--border);
-		flex-shrink: 0;
 		display: flex;
 		flex-direction: column;
-		margin-top: 4rem;
 	}
 	.eval-black { background: #1a1a1a; transition: height 0.4s; }
 	.eval-white { background: #f0d9b5; transition: height 0.4s; }
@@ -450,16 +464,10 @@
 		position: absolute;
 		left: 50%;
 		transform: translateX(-50%);
-		font-size: 0.6rem;
+		font-size: 0.68rem;
+		font-weight: 600;
 		color: var(--text-muted);
 		white-space: nowrap;
-	}
-
-	/* ── Board column ── */
-	.board-col {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
 	}
 
 	.game-info {
