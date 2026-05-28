@@ -235,7 +235,7 @@
 				</div>
 			{/if}
 
-			{#if $gameState.status === 'finished'}
+			{#if $gameState.status === 'finished' && !isReviewing}
 				<div class="overlay finished">
 					<p class="result-text">{resultText($gameState.result, $gameState.finishReason)}</p>
 					<a href="/" class="btn btn-primary" style="width:auto;margin-top:1rem">Nuova partita</a>

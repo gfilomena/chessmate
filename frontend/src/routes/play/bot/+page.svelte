@@ -420,7 +420,7 @@
 
 			<!-- Board -->
 			<div class="board-container">
-				{#if result !== null}
+				{#if result !== null && !isReviewing}
 					<div class="overlay finished">
 						<p class="result-text">{result}</p>
 						<button class="btn btn-primary" style="width:auto;margin-top:1rem" onclick={backToSetup}>
