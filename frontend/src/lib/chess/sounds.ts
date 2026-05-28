@@ -8,7 +8,7 @@
 import { browser } from '$app/environment';
 import { writable, get } from 'svelte/store';
 
-export type SoundName = 'move' | 'capture' | 'check' | 'game_start' | 'game_over' | 'illegal';
+export type SoundName  = 'move' | 'capture' | 'check' | 'game_start' | 'game_over' | 'illegal';
 export type SoundTheme = 'wood' | 'wood-real';
 
 // ── Libreria temi ────────────────────────────────────────────────────────────
@@ -38,6 +38,8 @@ const THEMES: Record<SoundTheme, { label: string; files: Record<SoundName, strin
 	},
 };
 
+export const THEME_KEYS = Object.keys(THEMES) as SoundTheme[];
+
 // ── Stato globale ────────────────────────────────────────────────────────────
 
 export const soundTheme = writable<SoundTheme>(
@@ -45,20 +47,39 @@ export const soundTheme = writable<SoundTheme>(
 );
 
 let muted = false;
-let elements: Partial<Record<SoundName, HTMLAudioElement>> = {};
+
+/**
+ * Cache di tutti i temi, precaricata una sola volta in initSounds().
+ * Il cambio tema è istantaneo: si punta semplicemente all'altro oggetto.
+ */
+const cache: Partial<Record<SoundTheme, Partial<Record<SoundName, HTMLAudioElement>>>> = {};
 
 // ── API pubblica ─────────────────────────────────────────────────────────────
 
-/** Precarica i suoni del tema corrente. Chiamare in onMount. */
+/**
+ * Precarica TUTTI i temi audio.
+ * Chiamare in onMount — eseguito una sola volta per sessione.
+ */
 export function initSounds(): void {
 	if (!browser) return;
-	loadTheme(get(soundTheme));
+	for (const [theme, config] of Object.entries(THEMES) as [SoundTheme, typeof THEMES[SoundTheme]][]) {
+		if (cache[theme]) continue;            // già caricato
+		const bucket: Partial<Record<SoundName, HTMLAudioElement>> = {};
+		for (const [name, src] of Object.entries(config.files) as [SoundName, string][]) {
+			const el = new Audio(src);
+			el.preload = 'auto';
+			el.load();
+			bucket[name as SoundName] = el;
+		}
+		cache[theme] = bucket;
+	}
 }
 
-/** Riproduce un suono. Ignorato se muted o browser non supporta. */
+/** Riproduce un suono del tema attivo. Ignorato se muted. */
 export function playSound(name: SoundName): void {
 	if (!browser || muted) return;
-	const el = elements[name];
+	const theme = get(soundTheme);
+	const el = cache[theme]?.[name];
 	if (!el) return;
 	el.currentTime = 0;
 	el.play().catch(() => { /* autoplay blocked */ });
@@ -72,38 +93,24 @@ export function toggleMute(): boolean {
 
 export function isMuted(): boolean { return muted; }
 
-/** Cambia tema e ricarica i suoni. Ritorna il nuovo tema. */
+/** Cicla al tema successivo e lo persiste. */
 export function cycleTheme(): SoundTheme {
-	const keys = Object.keys(THEMES) as SoundTheme[];
 	const current = get(soundTheme);
-	const next = keys[(keys.indexOf(current) + 1) % keys.length];
+	const next = THEME_KEYS[(THEME_KEYS.indexOf(current) + 1) % THEME_KEYS.length];
 	soundTheme.set(next);
 	if (browser) localStorage.setItem('soundTheme', next);
-	loadTheme(next);
 	return next;
 }
 
-/** Etichetta leggibile del tema corrente. */
+/** Etichetta leggibile del tema. */
 export function themeLabel(theme: SoundTheme): string {
-	return THEMES[theme].label;
+	return THEMES[theme]?.label ?? theme;
 }
-
-export const THEME_KEYS = Object.keys(THEMES) as SoundTheme[];
 
 // ── Interno ──────────────────────────────────────────────────────────────────
 
-function loadTheme(theme: SoundTheme): void {
-	elements = {};
-	const files = THEMES[theme].files;
-	for (const [name, src] of Object.entries(files) as [SoundName, string][]) {
-		const el = new Audio(src);
-		el.preload = 'auto';
-		elements[name] = el;
-	}
-}
-
 /**
- * Rileva il suono corretto da suonare dopo una mossa analizzando il PGN.
+ * Rileva il suono da suonare dall'ultima mossa in notazione PGN.
  * "Nxf6+" → 'check', "exd5" → 'capture', "Nf3" → 'move'
  */
 export function soundForPgnMove(pgn: string): SoundName {
