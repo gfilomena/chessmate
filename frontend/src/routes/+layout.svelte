@@ -12,12 +12,21 @@
 
 	let { children } = $props();
 
+	let sidebarOpen = $state(false);
+
 	onMount(() => loadUser());
 	onDestroy(() => { stopHeartbeat(); stopInviteSSE(); });
 
 	$effect(() => {
 		if ($user) { startHeartbeat(); startInviteSSE(); }
 		else        { stopHeartbeat(); stopInviteSSE(); }
+	});
+
+	// Chiudi sidebar ad ogni navigazione
+	const currentPath = $derived($page.url.pathname);
+	$effect(() => {
+		currentPath;
+		sidebarOpen = false;
 	});
 
 	async function handleLogout() {
@@ -27,13 +36,10 @@
 		window.location.href = '/';
 	}
 
-	// Active route highlight
-	const currentPath = $derived($page.url.pathname);
 	function isActive(path: string) {
 		return currentPath === path || currentPath.startsWith(path + '/');
 	}
 
-	// User initial for avatar
 	const initial = $derived($user?.username?.[0]?.toUpperCase() ?? '?');
 </script>
 
@@ -42,20 +48,41 @@
 	<title>Chess Clone</title>
 </svelte:head>
 
+<!-- ── Mobile top bar (solo < 768px) ───────────────────────── -->
+<header class="mobile-header">
+	<button
+		class="mobile-hamburger"
+		onclick={() => sidebarOpen = !sidebarOpen}
+		aria-label="Menu"
+	>
+		{sidebarOpen ? '✕' : '☰'}
+	</button>
+	<span class="mobile-logo-text">♟ Chess Clone</span>
+	{#if $user}
+		<div class="mobile-user-chip">{initial}</div>
+	{/if}
+</header>
+
+<!-- ── Backdrop sidebar (mobile) ───────────────────────────── -->
+<div
+	class="sidebar-backdrop"
+	class:sidebar-open={sidebarOpen}
+	onclick={() => sidebarOpen = false}
+	aria-hidden="true"
+></div>
+
 <div class="app-shell">
 
 	<!-- ── Left sidebar ─────────────────────────────────────── -->
-	<aside class="sidebar">
+	<aside class="sidebar" class:sidebar-open={sidebarOpen}>
 
-		<!-- Logo -->
-		<a href="/" class="sidebar-logo">
+		<a href="/" class="sidebar-logo" onclick={() => sidebarOpen = false}>
 			<span class="sidebar-logo-icon">♟</span>
 			<span class="sidebar-logo-text">Chess Clone</span>
 		</a>
 
-		<!-- Nav items -->
 		<nav class="sidebar-nav">
-			<a href="/play" class="nav-item" class:active={isActive('/play')}>
+			<a href="/play" class="nav-item" class:active={isActive('/play')} onclick={() => sidebarOpen = false}>
 				<span class="nav-icon">🎮</span>
 				<span>Gioca</span>
 			</a>
@@ -88,7 +115,6 @@
 			</span>
 		</nav>
 
-		<!-- Bottom: user info -->
 		<div class="sidebar-bottom">
 			{#if $user}
 				<div class="user-row">
@@ -100,11 +126,11 @@
 					<button class="logout-btn" onclick={handleLogout} title="Esci">⏏</button>
 				</div>
 			{:else}
-				<a href="/login" class="nav-item">
+				<a href="/login" class="nav-item" onclick={() => sidebarOpen = false}>
 					<span class="nav-icon">🔑</span>
 					<span>Accedi</span>
 				</a>
-				<a href="/register" class="nav-item">
+				<a href="/register" class="nav-item" onclick={() => sidebarOpen = false}>
 					<span class="nav-icon">✨</span>
 					<span>Registrati</span>
 				</a>

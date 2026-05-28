@@ -11,6 +11,7 @@
 	const gameId = $page.params.id!;
 
 	let muted = $state(false);
+	let panelOpen = $state(false);
 
 	onMount(() => {
 		initSounds();
@@ -26,18 +27,20 @@
 		disconnect();
 	});
 
-	// Determinismo: è il mio turno?
+	// Auto-apri il pannello quando arriva un'offerta di patta
+	$effect(() => {
+		if ($gameState.drawOffered) panelOpen = true;
+	});
+
 	const isMyTurn = $derived(
 		($gameState.status === 'active') &&
 		(($gameState.playerColor === 'white' && $gameState.turn === 'w') ||
 		 ($gameState.playerColor === 'black' && $gameState.turn === 'b'))
 	);
 
-	// Timer attivo per bianco/nero
 	const isWhiteActive = $derived($gameState.status === 'active' && $gameState.turn === 'w');
 	const isBlackActive = $derived($gameState.status === 'active' && $gameState.turn === 'b');
 
-	// Ultima mossa per highlight
 	let lastMove = $state<{ from: string; to: string } | null>(null);
 
 	function handleMove(from: string, to: string, promotion?: string) {
@@ -60,7 +63,6 @@
 		gameState.update(s => ({ ...s, drawOffered: false }));
 	}
 
-	// Testo risultato finale
 	function resultText(result: string | null, reason: string | null): string {
 		if (!result) return '';
 		const who = result === 'draw' ? 'Patta' :
@@ -136,10 +138,36 @@
 				isActive={$gameState.playerColor === 'white' ? isWhiteActive : isBlackActive}
 			/>
 		</div>
+
+		<!-- Pulsante toggle pannello (solo mobile) -->
+		<button class="panel-toggle" onclick={() => panelOpen = !panelOpen}>
+			{#if $gameState.drawOffered}
+				🤝 Offerta patta!
+			{:else if panelOpen}
+				✕ Chiudi
+			{:else}
+				📋 Mosse & Azioni
+			{/if}
+		</button>
 	</div>
 
+	<!-- Backdrop pannello (mobile) -->
+	<div
+		class="panel-backdrop"
+		class:panel-open={panelOpen}
+		onclick={() => panelOpen = false}
+		aria-hidden="true"
+	></div>
+
 	<!-- Colonna destra: mosse + azioni -->
-	<div class="side-col">
+	<div class="side-col" class:panel-open={panelOpen}>
+
+		<!-- Handle + header (solo mobile) -->
+		<div class="panel-drag-handle"></div>
+		<div class="panel-header">
+			<span>Mosse & Azioni</span>
+			<button class="panel-close" onclick={() => panelOpen = false}>✕</button>
+		</div>
 
 		<!-- Offerta patta ricevuta -->
 		{#if $gameState.drawOffered}
@@ -255,6 +283,17 @@
 		color: var(--accent);
 	}
 
+	/* ── Panel toggle (default: nascosto, visibile solo mobile) ── */
+	.panel-toggle {
+		display: none;
+	}
+
+	/* ── Backdrop pannello mobile ── */
+	.panel-backdrop {
+		display: none;
+	}
+
+	/* ── Side column ── */
 	.side-col {
 		display: flex;
 		flex-direction: column;
@@ -262,6 +301,11 @@
 		width: 240px;
 		padding-top: 3rem;
 	}
+
+	/* ── Panel handle + header (nascosti su desktop) ── */
+	.panel-drag-handle { display: none; }
+	.panel-header      { display: none; }
+	.panel-close       { display: none; }
 
 	.moves-panel {
 		background: var(--bg-card);
@@ -327,4 +371,136 @@
 		transition: border-color 0.15s, color 0.15s;
 	}
 	.mute-btn:hover { border-color: var(--accent); color: var(--text); }
+
+	/* ═══════════════════════════════════════════════════════════
+	   MOBILE (≤ 768px)
+	   ═══════════════════════════════════════════════════════════ */
+	@media (max-width: 768px) {
+		.game-layout {
+			flex-direction: column;
+			padding: 0.5rem 0.5rem 1rem;
+			gap: 0.4rem;
+			align-items: center;
+			min-height: 0;
+		}
+
+		.board-col {
+			width: 100%;
+			align-items: center;
+			gap: 0.5rem;
+		}
+
+		/* Le righe player si allineano alla larghezza della board */
+		.player-row {
+			width: min(calc(100vw - 1rem), calc(100vh - 220px));
+		}
+
+		/* Pulsante toggle pannello — visibile su mobile */
+		.panel-toggle {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.4rem;
+			width: min(calc(100vw - 1rem), calc(100vh - 220px));
+			padding: 0.55rem 1rem;
+			background: var(--bg-card);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			color: var(--text);
+			font-size: 0.9rem;
+			cursor: pointer;
+			font-weight: 500;
+			transition: border-color 0.15s;
+		}
+		.panel-toggle:hover { border-color: var(--accent); }
+
+		/* Backdrop semitrasparente sotto il pannello */
+		.panel-backdrop {
+			display: block;
+			position: fixed;
+			inset: 0;
+			background: rgba(0,0,0,0.45);
+			z-index: 40;
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 0.25s ease;
+		}
+		.panel-backdrop.panel-open {
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		/* Side col → bottom sheet */
+		.side-col {
+			position: fixed;
+			bottom: 0; left: 0; right: 0;
+			width: 100% !important;
+			max-height: 72vh;
+			background: var(--bg-card);
+			border-top: 2px solid var(--border);
+			border-radius: 16px 16px 0 0;
+			padding: 0 1rem 2rem;
+			z-index: 50;
+			overflow-y: auto;
+			transform: translateY(100%);
+			transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			gap: 0.75rem;
+		}
+		.side-col.panel-open {
+			transform: translateY(0);
+		}
+
+		/* Handle di trascinamento visivo */
+		.panel-drag-handle {
+			display: block;
+			width: 36px;
+			height: 4px;
+			background: var(--border);
+			border-radius: 2px;
+			margin: 0.8rem auto 0.4rem;
+			flex-shrink: 0;
+		}
+
+		/* Header del pannello con titolo e tasto chiudi */
+		.panel-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0.5rem 0 0.65rem;
+			position: sticky;
+			top: 0;
+			background: var(--bg-card);
+			z-index: 1;
+			border-bottom: 1px solid var(--border);
+			flex-shrink: 0;
+		}
+		.panel-header span {
+			font-weight: 600;
+			font-size: 0.9rem;
+			color: var(--text-muted);
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+		.panel-close {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: none;
+			border: none;
+			color: var(--text-muted);
+			font-size: 1.1rem;
+			cursor: pointer;
+			padding: 0.25rem;
+			line-height: 1;
+			transition: color 0.15s;
+		}
+		.panel-close:hover { color: var(--text); }
+
+		/* Moves panel: altezza automatica, niente flex:1 */
+		.moves-panel {
+			flex: none;
+			max-height: 220px;
+			overflow-y: auto;
+		}
+	}
 </style>

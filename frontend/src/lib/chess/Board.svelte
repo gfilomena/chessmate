@@ -284,6 +284,15 @@
 		aspect-ratio: 1 / 1;
 	}
 
+	@media (max-width: 768px) {
+		.board-wrap {
+			/* Su mobile: riempi la larghezza viewport (meno margine laterale).
+			   calc(100vh - 220px) lascia spazio per header(52) + righe player(88)
+			   + pulsante panel(48) + gap/padding(~32). */
+			width: min(calc(100vw - 1rem), calc(100vh - 220px));
+		}
+	}
+
 	/* ── 8×8 grid ───────────────────────────────────────────────── */
 	.board {
 		width: 100%;

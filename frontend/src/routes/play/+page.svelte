@@ -617,6 +617,27 @@
 		font-size: 0.875rem;
 	}
 
+	/* ── Mobile (≤ 768px) ── */
+	@media (max-width: 768px) {
+		.play-page {
+			padding: 1rem 0.75rem 2rem;
+			gap: 1.25rem;
+		}
+		.tc-panel {
+			max-width: 100%;
+			padding: 1.25rem 1rem;
+		}
+		.online-section {
+			max-width: 100%;
+		}
+		/* Griglia TC: 2 colonne su schermi molto stretti */
+		@media (max-width: 360px) {
+			.tc-grid {
+				grid-template-columns: repeat(2, 1fr);
+			}
+		}
+	}
+
 	.custom-inputs {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
