@@ -205,6 +205,17 @@
 		return { white: 'Bianco vince', black: 'Nero vince', draw: 'Patta' }[result] ?? result;
 	}
 
+	/** Badge classificazione sull'angolo in alto a destra del pezzo mosso */
+	const squareBadge = $derived(
+		reviewDone && currentIdx > 0 && currentClassification
+			? {
+				square: moveUcis[currentIdx - 1].slice(2, 4),
+				symbol: currentClassification.symbol,
+				color:  currentClassification.color
+			}
+			: null
+	);
+
 	/** Percentuale barra progresso */
 	const progressPct = $derived(reviewTotal > 0 ? Math.round((reviewProgress / reviewTotal) * 100) : 0);
 
@@ -256,6 +267,7 @@
 			lastMove={null}
 			onMove={() => {}}
 			arrows={boardArrows}
+			squareBadge={squareBadge}
 		/>
 
 		<!-- Navigazione -->
@@ -334,12 +346,12 @@
 		{#if reviewDone && Object.keys(reviewSummary).length > 0}
 			<div class="review-summary">
 				{#each [
-					{ key:'best',       label:'Ottima',       symbol:'!!', color:'#5B8E55' },
-					{ key:'excellent',  label:'Eccellente',   symbol:'!',  color:'#81B64C' },
-					{ key:'good',       label:'Buona',        symbol:'·',  color:'#5080C0' },
-					{ key:'inaccuracy', label:'Imprecisione', symbol:'?!', color:'#C9A020' },
-					{ key:'mistake',    label:'Errore',       symbol:'?',  color:'#D97706' },
 					{ key:'blunder',    label:'Gaffe',        symbol:'??', color:'#DC2626' },
+					{ key:'mistake',    label:'Errore',       symbol:'?',  color:'#D97706' },
+					{ key:'inaccuracy', label:'Imprecisione', symbol:'?!', color:'#C9A020' },
+					{ key:'good',       label:'Buona',        symbol:'·',  color:'#5080C0' },
+					{ key:'excellent',  label:'Eccellente',   symbol:'!',  color:'#81B64C' },
+					{ key:'best',       label:'Ottima',       symbol:'!!', color:'#5B8E55' },
 				] as row}
 					{#if (reviewSummary[row.key] ?? 0) > 0}
 						<div class="summary-row">

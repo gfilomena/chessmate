@@ -8,7 +8,8 @@
 		isMyTurn,
 		lastMove,
 		onMove,
-		arrows = []
+		arrows = [],
+		squareBadge = null
 	}: {
 		fen: string;
 		playerColor: 'white' | 'black';
@@ -16,6 +17,7 @@
 		lastMove: { from: string; to: string } | null;
 		onMove: (from: string, to: string, promotion?: string) => void;
 		arrows?: { from: string; to: string; color?: string }[];
+		squareBadge?: { square: string; symbol: string; color: string } | null;
 	} = $props();
 
 	// ── Arrow helpers ──────────────────────────────────────────────
@@ -302,6 +304,13 @@
 						<span class="piece" class:is-drag-src={isDragSrc}>{@html svg}</span>
 					{/if}
 
+					<!-- Move classification badge (top-right corner) -->
+					{#if squareBadge && square === squareBadge.square && svg}
+						<span class="sq-badge" style="background:{squareBadge.color}">
+							{squareBadge.symbol || '·'}
+						</span>
+					{/if}
+
 					<!-- Legal-move dot (empty target) -->
 					{#if legal && !hasPiece}
 						<span class="dot"></span>
@@ -462,6 +471,26 @@
 	.drag-ghost :global(svg) {
 		width: 100%;
 		height: 100%;
+	}
+
+	/* ── Move classification badge ──────────────────────────────── */
+	.sq-badge {
+		position: absolute;
+		top: 3px;
+		right: 3px;
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.42rem;
+		font-weight: 800;
+		color: #fff;
+		z-index: 5;
+		pointer-events: none;
+		line-height: 1;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.5);
 	}
 
 	/* ── Arrow overlay ──────────────────────────────────────────── */
