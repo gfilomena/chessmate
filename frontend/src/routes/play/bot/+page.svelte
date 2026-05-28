@@ -5,6 +5,7 @@
 	import Board from '$lib/chess/Board.svelte';
 	import { StockfishEngine } from '$lib/chess/stockfish';
 	import { user, authLoading } from '$lib/stores/auth';
+	import { initSounds, playSound, toggleMute } from '$lib/chess/sounds';
 
 	// ── Auth guard ────────────────────────────────────────────────────────────
 	$effect(() => {
@@ -43,11 +44,16 @@
 	let engine: StockfishEngine | null = null;
 	let engineReady = $state(false);
 
+	let muted = $state(false);
+
 	onMount(async () => {
+		initSounds();
 		engine = new StockfishEngine();
 		await engine.init();
 		engineReady = true;
 	});
+
+	function handleToggleMute() { muted = toggleMute(); }
 
 	onDestroy(() => {
 		engine?.destroy();
@@ -94,8 +100,8 @@
 		moveHistory = [];
 		isThinking = false;
 		phase = 'playing';
+		playSound('game_start');
 
-		// Bot plays first if player chose black
 		if (playerColor === 'black') {
 			triggerBotMove();
 		}
@@ -114,6 +120,12 @@
 			lastMove = { from, to };
 			moveHistory = [...moveHistory, move.san];
 
+			// Suono mossa: cattura, scacco o mossa normale
+			if (chessGame.isCheckmate())        playSound('check');
+			else if (chessGame.inCheck())       playSound('check');
+			else if (move.flags.includes('c') || move.flags.includes('e')) playSound('capture');
+			else                                playSound('move');
+
 			if (checkGameOver()) return;
 			triggerBotMove();
 		} catch {
@@ -129,12 +141,10 @@
 			const uciMove = await engine.getBestMove(chessGame.fen(), selectedElo);
 			if (!uciMove) { isThinking = false; return; }
 
-			// UCI format: "e2e4" or "e7e8q" (promotion)
 			const from  = uciMove.slice(0, 2);
 			const to    = uciMove.slice(2, 4);
 			const promo = uciMove.length >= 5 ? uciMove[4] : undefined;
 
-			// Small visual delay so the move doesn't appear instantly
 			await sleep(350);
 
 			const moveObj: Record<string, string> = { from, to };
@@ -145,6 +155,12 @@
 				fen = chessGame.fen();
 				lastMove = { from, to };
 				moveHistory = [...moveHistory, move.san];
+
+				if (chessGame.isCheckmate())        playSound('check');
+				else if (chessGame.inCheck())       playSound('check');
+				else if (move.flags.includes('c') || move.flags.includes('e')) playSound('capture');
+				else                                playSound('move');
+
 				checkGameOver();
 			}
 		} catch {
@@ -157,8 +173,9 @@
 	function checkGameOver(): boolean {
 		if (!chessGame.isGameOver()) return false;
 
+		playSound('game_over');
+
 		if (chessGame.isCheckmate()) {
-			// chessGame.turn() is the color in checkmate (lost)
 			const loserColor = chessGame.turn() === 'w' ? 'white' : 'black';
 			result = loserColor === playerColor
 				? 'Scacco matto — Hai perso!'
@@ -378,6 +395,11 @@
 					⏳ Aspetta...
 				{/if}
 			</div>
+
+			<!-- Mute -->
+			<button class="mute-btn" onclick={handleToggleMute} title={muted ? 'Attiva audio' : 'Disattiva audio'}>
+				{muted ? '🔇' : '🔊'} {muted ? 'Audio off' : 'Audio on'}
+			</button>
 
 			<!-- Back link -->
 			<button class="btn btn-google" style="width:100%;font-size:0.85rem" onclick={backToSetup}>
@@ -681,4 +703,17 @@
 	border-color: #e6a817;
 	color: #e6a817;
 }
+
+.mute-btn {
+	background: none;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	color: var(--text-muted);
+	font-size: 0.8rem;
+	padding: 0.4rem 0.75rem;
+	cursor: pointer;
+	width: 100%;
+	transition: border-color 0.15s, color 0.15s;
+}
+.mute-btn:hover { border-color: var(--accent); color: var(--text); }
 </style>

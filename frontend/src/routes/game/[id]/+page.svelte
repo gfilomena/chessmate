@@ -6,13 +6,21 @@
 	import { gameState, resetGame } from '$lib/stores/game';
 	import { connectToGame, sendMove, sendResign, sendOfferDraw, sendDrawResponse, disconnect } from '$lib/ws/socket';
 	import { user } from '$lib/stores/auth';
+	import { initSounds, toggleMute, isMuted } from '$lib/chess/sounds';
 
 	const gameId = $page.params.id!;
 
+	let muted = $state(false);
+
 	onMount(() => {
+		initSounds();
 		resetGame();
 		connectToGame(gameId);
 	});
+
+	function handleToggleMute() {
+		muted = toggleMute();
+	}
 
 	onDestroy(() => {
 		disconnect();
@@ -168,6 +176,11 @@
 			</div>
 		{/if}
 
+		<!-- Mute -->
+		<button class="mute-btn" onclick={handleToggleMute} title={muted ? 'Attiva audio' : 'Disattiva audio'}>
+			{muted ? '🔇' : '🔊'} {muted ? 'Audio off' : 'Audio on'}
+		</button>
+
 		<!-- Status partita -->
 		<div class="status-badge" class:active={$gameState.status === 'active'}>
 			{#if $gameState.status === 'waiting'}
@@ -301,4 +314,17 @@
 		border-color: var(--accent);
 		color: var(--accent);
 	}
+
+	.mute-btn {
+		background: none;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		color: var(--text-muted);
+		font-size: 0.8rem;
+		padding: 0.4rem 0.75rem;
+		cursor: pointer;
+		width: 100%;
+		transition: border-color 0.15s, color 0.15s;
+	}
+	.mute-btn:hover { border-color: var(--accent); color: var(--text); }
 </style>

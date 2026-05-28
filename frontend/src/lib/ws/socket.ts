@@ -1,5 +1,6 @@
 import { gameState } from '$lib/stores/game';
 import { WS_URL as WS_BASE } from '$lib/config';
+import { playSound, soundForPgnMove } from '$lib/chess/sounds';
 
 const WS_URL = `${WS_BASE}/ws/game`;
 
@@ -31,19 +32,20 @@ export function connectToGame(id: string) {
 function handleMessage(msg: { type: string; payload?: any }) {
 	switch (msg.type) {
 		case 'game_start':
-			// Entrambi i giocatori connessi → la partita inizia
+			playSound('game_start');
 			gameState.update((s) => ({
 				...s,
 				status: 'active',
 				fen: msg.payload.fen,
 				playerColor: msg.payload.your_color,
-				turn: 'w',                    // il bianco muove sempre per primo
+				turn: 'w',
 				whiteMs: msg.payload.white_ms,
 				blackMs: msg.payload.black_ms
 			}));
 			break;
 
 		case 'move_made':
+			playSound(soundForPgnMove(msg.payload.pgn ?? ''));
 			gameState.update((s) => ({
 				...s,
 				fen: msg.payload.fen,
@@ -54,7 +56,12 @@ function handleMessage(msg: { type: string; payload?: any }) {
 			}));
 			break;
 
+		case 'move_invalid':
+			playSound('illegal');
+			break;
+
 		case 'game_over':
+			playSound('game_over');
 			gameState.update((s) => ({
 				...s,
 				status: 'finished',
