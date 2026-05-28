@@ -60,6 +60,7 @@ func NewRouter(pg *db.Postgres, mm *matchmaking.Matchmaker, staticFS fs.FS) http
 
 	// Utenti
 	usersHandler := NewUsersHandler(pg)
+	mux.HandleFunc("GET /api/leaderboard", usersHandler.GetLeaderboard)
 	mux.HandleFunc("GET /api/users/{id}", usersHandler.GetUser)
 	mux.HandleFunc("GET /api/users/{id}/stats", usersHandler.GetStats)
 	mux.HandleFunc("GET /api/users/{id}/elo-history", usersHandler.GetEloHistory)

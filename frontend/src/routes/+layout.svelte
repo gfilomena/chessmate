@@ -88,26 +88,10 @@
 				<span class="nav-icon">🎮</span>
 				<span>Gioca</span>
 			</a>
-			<span class="nav-item disabled">
-				<span class="nav-icon">🧩</span>
-				<span>Problemi</span>
-			</span>
-			<span class="nav-item disabled">
-				<span class="nav-icon">🎓</span>
-				<span>Impara</span>
-			</span>
-			<span class="nav-item disabled">
-				<span class="nav-icon">🏋️</span>
-				<span>Allenati</span>
-			</span>
-			<span class="nav-item disabled">
-				<span class="nav-icon">📺</span>
-				<span>Guarda</span>
-			</span>
-			<span class="nav-item disabled">
-				<span class="nav-icon">👥</span>
-				<span>Community</span>
-			</span>
+			<a href="/leaderboard" class="nav-item" class:active={isActive('/leaderboard')} onclick={() => sidebarOpen = false}>
+				<span class="nav-icon">🏆</span>
+				<span>Classifica</span>
+			</a>
 
 			<div class="nav-divider"></div>
 

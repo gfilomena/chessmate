@@ -87,6 +87,45 @@ func (h *UsersHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, stats)
 }
 
+// GET /api/leaderboard — classifica globale per ELO rapid
+func (h *UsersHandler) GetLeaderboard(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.pg.Pool.Query(r.Context(), `
+		SELECT u.id, u.username, u.avatar_url, u.elo_rapid,
+		       COUNT(g.id) AS total_games
+		FROM users u
+		LEFT JOIN games g
+		       ON (g.white_id = u.id OR g.black_id = u.id)
+		      AND g.status = 'finished'
+		GROUP BY u.id, u.username, u.avatar_url, u.elo_rapid
+		ORDER BY u.elo_rapid DESC
+		LIMIT 50
+	`)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "SERVER_ERROR", "Errore query")
+		return
+	}
+	defer rows.Close()
+
+	type Entry struct {
+		ID         string  `json:"id"`
+		Username   string  `json:"username"`
+		AvatarURL  *string `json:"avatar_url"`
+		EloRapid   int     `json:"elo_rapid"`
+		TotalGames int     `json:"total_games"`
+	}
+
+	var entries []Entry
+	for rows.Next() {
+		var e Entry
+		rows.Scan(&e.ID, &e.Username, &e.AvatarURL, &e.EloRapid, &e.TotalGames)
+		entries = append(entries, e)
+	}
+	if entries == nil {
+		entries = []Entry{}
+	}
+	writeJSON(w, http.StatusOK, entries)
+}
+
 // GET /api/users/:id/elo-history — storico ELO per grafico
 func (h *UsersHandler) GetEloHistory(w http.ResponseWriter, r *http.Request) {
 	userID := r.PathValue("id")
