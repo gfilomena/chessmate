@@ -5,7 +5,7 @@
 	import Board from '$lib/chess/Board.svelte';
 	import { StockfishEngine } from '$lib/chess/stockfish';
 	import { user, authLoading } from '$lib/stores/auth';
-	import { initSounds, playSound, toggleMute } from '$lib/chess/sounds';
+	import { initSounds, playSound, toggleMute, cycleTheme, soundTheme, themeLabel } from '$lib/chess/sounds';
 
 	// ── Auth guard ────────────────────────────────────────────────────────────
 	$effect(() => {
@@ -46,6 +46,7 @@
 
 	let muted = $state(false);
 	let panelOpen = $state(false);
+	const currentTheme = $derived($soundTheme);
 
 	onMount(async () => {
 		initSounds();
@@ -417,10 +418,15 @@
 				{/if}
 			</div>
 
-			<!-- Mute -->
-			<button class="mute-btn" onclick={handleToggleMute} title={muted ? 'Attiva audio' : 'Disattiva audio'}>
-				{muted ? '🔇' : '🔊'} {muted ? 'Audio off' : 'Audio on'}
-			</button>
+			<!-- Audio controls -->
+			<div class="audio-row">
+				<button class="mute-btn" onclick={handleToggleMute} title={muted ? 'Attiva audio' : 'Disattiva audio'}>
+					{muted ? '🔇' : '🔊'}
+				</button>
+				<button class="theme-btn" onclick={() => cycleTheme()} title="Cambia tema sonoro">
+					{themeLabel(currentTheme)}
+				</button>
+			</div>
 
 			<!-- Back link -->
 			<button class="btn btn-google" style="width:100%;font-size:0.85rem" onclick={backToSetup}>
@@ -725,18 +731,38 @@
 	color: #e6a817;
 }
 
+.audio-row {
+	display: flex;
+	gap: 0.4rem;
+}
 .mute-btn {
 	background: none;
 	border: 1px solid var(--border);
 	border-radius: 8px;
 	color: var(--text-muted);
-	font-size: 0.8rem;
-	padding: 0.4rem 0.75rem;
+	font-size: 1rem;
+	padding: 0.4rem 0.6rem;
 	cursor: pointer;
-	width: 100%;
+	flex-shrink: 0;
 	transition: border-color 0.15s, color 0.15s;
 }
 .mute-btn:hover { border-color: var(--accent); color: var(--text); }
+.theme-btn {
+	background: none;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	color: var(--text-muted);
+	font-size: 0.78rem;
+	padding: 0.4rem 0.6rem;
+	cursor: pointer;
+	flex: 1;
+	text-align: left;
+	transition: border-color 0.15s, color 0.15s;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.theme-btn:hover { border-color: var(--accent); color: var(--text); }
 
 /* ── Panel toggle / backdrop (nascosti su desktop) ── */
 .panel-toggle  { display: none; }
