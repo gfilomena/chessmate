@@ -315,27 +315,27 @@
 			{/each}
 		{/each}
 	</div>
-</div>
 
-<!-- Arrow overlay — sits above pieces, below promotion modal -->
-{#if arrows.length > 0}
-	<svg class="arrows-layer" viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-		{#each arrows as arrow}
-			{@const a = computeArrow(arrow.from, arrow.to)}
-			{#if a}
-				{@const col = arrow.color ?? 'rgba(100,190,100,0.88)'}
-				<line
-					x1={a.x1} y1={a.y1} x2={a.bx} y2={a.by}
-					stroke={col} stroke-width="0.13" stroke-linecap="round"
-				/>
-				<polygon
-					points="{a.lx},{a.ly} {a.tx},{a.ty} {a.rx},{a.ry}"
-					fill={col}
-				/>
-			{/if}
-		{/each}
-	</svg>
-{/if}
+	<!-- Arrow overlay — dentro board-wrap, sopra i pezzi -->
+	{#if arrows.length > 0}
+		<svg class="arrows-layer" viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
+			{#each arrows as arrow}
+				{@const a = computeArrow(arrow.from, arrow.to)}
+				{#if a}
+					{@const col = arrow.color ?? 'rgba(100,190,100,0.88)'}
+					<line
+						x1={a.x1} y1={a.y1} x2={a.bx} y2={a.by}
+						stroke={col} stroke-width="0.13" stroke-linecap="round"
+					/>
+					<polygon
+						points="{a.lx},{a.ly} {a.tx},{a.ty} {a.rx},{a.ry}"
+						fill={col}
+					/>
+				{/if}
+			{/each}
+		</svg>
+	{/if}
+</div>
 
 <!-- Floating drag ghost — viewport-fixed, follows cursor -->
 {#if isDragActive && dragSvg !== null}
@@ -467,12 +467,10 @@
 	/* ── Arrow overlay ──────────────────────────────────────────── */
 	.arrows-layer {
 		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
+		inset: 3px;          /* compensa il border: 3px della .board */
 		pointer-events: none;
 		z-index: 10;
-		overflow: visible;
+		overflow: visible;   /* frecce possono sforare leggermente il bordo */
 	}
 
 	/* ── Promotion overlay ───────────────────────────────────────── */
