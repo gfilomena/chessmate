@@ -325,7 +325,18 @@ func (r *Room) updateELO(result string, ctx context.Context) {
 		return
 	}
 
-	newWhiteElo, newBlackElo := calculateELO(whiteElo, blackElo, result)
+	// Numero di partite già giocate (per K-factor provvisorio)
+	var whiteGames, blackGames int
+	r.pg.Pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM elo_history WHERE user_id = $1 AND game_type = 'rapid'`,
+		whiteID,
+	).Scan(&whiteGames)
+	r.pg.Pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM elo_history WHERE user_id = $1 AND game_type = 'rapid'`,
+		blackID,
+	).Scan(&blackGames)
+
+	newWhiteElo, newBlackElo := calculateELO(whiteElo, blackElo, whiteGames, blackGames, result)
 
 	r.pg.Pool.Exec(ctx, `UPDATE users SET elo_rapid=$1 WHERE id=$2`, newWhiteElo, whiteID)
 	r.pg.Pool.Exec(ctx, `UPDATE users SET elo_rapid=$1 WHERE id=$2`, newBlackElo, blackID)
@@ -335,15 +346,47 @@ func (r *Room) updateELO(result string, ctx context.Context) {
 		whiteID, r.gameID, whiteElo, newWhiteElo,
 		blackID, blackElo, newBlackElo,
 	)
+
+	log.Printf("ELO aggiornato — bianco %d→%d (K=%d, partite=%d) | nero %d→%d (K=%d, partite=%d)",
+		whiteElo, newWhiteElo, int(kFactor(whiteElo, whiteGames)), whiteGames,
+		blackElo, newBlackElo, int(kFactor(blackElo, blackGames)), blackGames,
+	)
 }
 
-func calculateELO(whiteElo, blackElo int, result string) (int, int) {
-	const K = 32
+// kFactor restituisce il K-factor chess.com per il giocatore.
+//
+//	< 25 partite    → K = 40  (periodo provvisorio, aggiustamento rapido)
+//	ELO  < 2000     → K = 32  (giocatore normale)
+//	ELO 2000–2399   → K = 24  (giocatore avanzato)
+//	ELO ≥ 2400      → K = 16  (élite)
+func kFactor(elo, games int) float64 {
+	if games < 25 {
+		return 40
+	}
+	if elo >= 2400 {
+		return 16
+	}
+	if elo >= 2000 {
+		return 24
+	}
+	return 32
+}
+
+// calculateELO calcola i nuovi rating dopo una partita.
+// Formula standard ELO con K-factor dinamico e floor a 100.
+//
+// Expected score: E = 1 / (1 + 10^((Rb-Ra)/400))
+// Nuovo rating:   R' = max(100, R + round(K * (score - expected)))
+func calculateELO(whiteElo, blackElo, whiteGames, blackGames int, result string) (int, int) {
 	expected := func(a, b int) float64 {
 		return 1.0 / (1.0 + math.Pow(10, float64(b-a)/400.0))
 	}
+
 	eW := expected(whiteElo, blackElo)
 	eB := expected(blackElo, whiteElo)
+
+	kW := kFactor(whiteElo, whiteGames)
+	kB := kFactor(blackElo, blackGames)
 
 	var sW, sB float64
 	switch result {
@@ -351,11 +394,14 @@ func calculateELO(whiteElo, blackElo int, result string) (int, int) {
 		sW, sB = 1, 0
 	case "black":
 		sW, sB = 0, 1
-	default:
+	default: // draw
 		sW, sB = 0.5, 0.5
 	}
 
-	return whiteElo + int(K*(sW-eW)), blackElo + int(K*(sB-eB))
+	const floor = 100
+	newW := max(floor, whiteElo+int(math.Round(kW*(sW-eW))))
+	newB := max(floor, blackElo+int(math.Round(kB*(sB-eB))))
+	return newW, newB
 }
 
 func (r *Room) broadcast(msg OutboundMsg) {
