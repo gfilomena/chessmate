@@ -184,11 +184,6 @@
 
 			return [];
 		}
-		// modalità analisi live
-		const bm = analysis?.bestMove;
-		if (bm && bm !== '(none)' && bm.length >= 4) {
-			return [{ from: bm.slice(0, 2), to: bm.slice(2, 4), color: 'rgba(100,190,100,0.75)' }];
-		}
 		return [];
 	})());
 
