@@ -40,6 +40,54 @@
 	let result: string | null = $state(null);
 	let moveHistory: string[] = $state([]);
 
+	// ── Move navigation ────────────────────────────────────────────────────────
+	interface HistoryEntry {
+		fen: string;
+		move: { from: string; to: string } | null;
+	}
+
+	function buildBotHistory(moves: string[]): HistoryEntry[] {
+		const entries: HistoryEntry[] = [{ fen: new Chess().fen(), move: null }];
+		const replay = new Chess();
+		for (const san of moves) {
+			try {
+				const mv = replay.move(san) as any;
+				if (mv) entries.push({ fen: replay.fen(), move: { from: mv.from, to: mv.to } });
+			} catch {}
+		}
+		return entries;
+	}
+
+	let viewIndex = $state<number | null>(null); // null = live
+
+	const botHistory  = $derived(buildBotHistory(moveHistory));
+	const isReviewing = $derived(viewIndex !== null);
+	const atStart     = $derived(viewIndex === 0);
+	const atEnd       = $derived(viewIndex === null);
+
+	const displayFen = $derived(
+		viewIndex === null ? fen : (botHistory[viewIndex]?.fen ?? fen)
+	);
+	const displayLastMove = $derived(
+		viewIndex === null ? lastMove : (botHistory[viewIndex]?.move ?? null)
+	);
+	const navLabel = $derived(
+		viewIndex === null ? 'Live' : `${viewIndex} / ${botHistory.length - 1}`
+	);
+
+	function navFirst() { viewIndex = 0; }
+	function navPrev()  {
+		const idx = viewIndex ?? botHistory.length - 1;
+		if (idx > 0) viewIndex = idx - 1;
+	}
+	function navNext()  {
+		if (viewIndex === null) return;
+		if (viewIndex < botHistory.length - 1) viewIndex++;
+		else viewIndex = null;
+	}
+	function navLast()  { viewIndex = null; }
+	// ──────────────────────────────────────────────────────────────────────────
+
 	// ── Engine ────────────────────────────────────────────────────────────────
 	let engine: StockfishEngine | null = null;
 	let engineReady = $state(false);
@@ -71,6 +119,9 @@
 		((playerColor === 'white' && currentTurn === 'w') ||
 		 (playerColor === 'black' && currentTurn === 'b'))
 	);
+
+	// In modalità revisione il board non accetta mosse
+	const canMove = $derived(!isReviewing && isPlayerTurn);
 
 	const selectedLevel = $derived(ELO_LEVELS.find(l => l.elo === selectedElo) ?? ELO_LEVELS[4]);
 
@@ -202,6 +253,7 @@
 	function backToSetup() {
 		result = null;
 		phase = 'setup';
+		viewIndex = null;
 		// Reset board so it doesn't flicker
 		chessGame = new Chess();
 		fen = chessGame.fen();
@@ -331,10 +383,10 @@
 				{/if}
 
 				<Board
-					{fen}
+					fen={displayFen}
 					{playerColor}
-					isMyTurn={isPlayerTurn}
-					{lastMove}
+					isMyTurn={canMove}
+					lastMove={displayLastMove}
 					onMove={handlePlayerMove}
 				/>
 			</div>
@@ -426,6 +478,15 @@
 				<button class="theme-btn" onclick={() => cycleTheme()} title="Cambia tema sonoro">
 					{themeLabel(currentTheme)}
 				</button>
+			</div>
+
+			<!-- Navigazione mosse -->
+			<div class="nav-row" class:reviewing={isReviewing}>
+				<button class="nav-btn" onclick={navFirst} disabled={atStart} title="Prima mossa">⏮</button>
+				<button class="nav-btn" onclick={navPrev}  disabled={atStart} title="Mossa precedente">◀</button>
+				<span class="nav-label" class:live={!isReviewing}>{navLabel}</span>
+				<button class="nav-btn" onclick={navNext}  disabled={atEnd}   title="Mossa successiva">▶</button>
+				<button class="nav-btn" onclick={navLast}  disabled={atEnd}   title="Ultima mossa">⏭</button>
 			</div>
 
 			<!-- Back link -->
@@ -763,6 +824,53 @@
 	text-overflow: ellipsis;
 }
 .theme-btn:hover { border-color: var(--accent); color: var(--text); }
+
+/* ── Move navigation ── */
+.nav-row {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 0.3rem 0.4rem;
+	transition: border-color 0.2s;
+}
+.nav-row.reviewing {
+	border-color: var(--accent);
+}
+.nav-btn {
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	font-size: 0.78rem;
+	padding: 0.3rem 0.45rem;
+	cursor: pointer;
+	border-radius: 5px;
+	transition: background 0.12s, color 0.12s;
+	line-height: 1;
+	flex-shrink: 0;
+}
+.nav-btn:hover:not(:disabled) {
+	background: rgba(255,255,255,0.08);
+	color: var(--text);
+}
+.nav-btn:disabled {
+	opacity: 0.3;
+	cursor: default;
+}
+.nav-label {
+	flex: 1;
+	text-align: center;
+	font-size: 0.72rem;
+	font-weight: 600;
+	color: var(--text-muted);
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+}
+.nav-label.live {
+	color: #e05050;
+}
 
 /* ── Panel toggle / backdrop (nascosti su desktop) ── */
 .panel-toggle  { display: none; }
