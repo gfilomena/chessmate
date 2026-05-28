@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
+	import { Chess } from 'chess.js';
 	import Board from '$lib/chess/Board.svelte';
 	import Timer from '$lib/chess/Timer.svelte';
 	import { gameState, resetGame } from '$lib/stores/game';
@@ -13,6 +14,60 @@
 	let muted = $state(false);
 	let panelOpen = $state(false);
 	const currentTheme = $derived($soundTheme);
+
+	// ── Move navigation ─────────────────────────────────────────────
+	interface HistoryEntry {
+		fen: string;
+		move: { from: string; to: string } | null;
+	}
+
+	function buildHistory(pgn: string): HistoryEntry[] {
+		const entries: HistoryEntry[] = [{ fen: new Chess().fen(), move: null }];
+		if (!pgn) return entries;
+		try {
+			const temp = new Chess();
+			temp.loadPgn(pgn);
+			const moves = temp.history({ verbose: true }) as any[];
+			const replay = new Chess();
+			for (const mv of moves) {
+				replay.move(mv.san);
+				entries.push({ fen: replay.fen(), move: { from: mv.from, to: mv.to } });
+			}
+		} catch {}
+		return entries;
+	}
+
+	let viewIndex = $state<number | null>(null); // null = live
+
+	const history = $derived(buildHistory($gameState.pgn));
+
+	const displayFen = $derived(
+		viewIndex === null ? $gameState.fen : (history[viewIndex]?.fen ?? $gameState.fen)
+	);
+
+	const isReviewing = $derived(viewIndex !== null);
+	const atStart     = $derived(viewIndex === 0);
+	const atEnd       = $derived(viewIndex === null);
+
+	const navLabel = $derived(
+		viewIndex === null
+			? 'Live'
+			: `${viewIndex} / ${history.length - 1}`
+	);
+
+	function navFirst() { viewIndex = 0; }
+	function navPrev()  {
+		const idx = viewIndex ?? history.length - 1;
+		if (idx > 0) viewIndex = idx - 1;
+	}
+	function navNext()  {
+		if (viewIndex === null) return;
+		if (viewIndex < history.length - 1) viewIndex++;
+		else viewIndex = null;
+	}
+	function navLast()  { viewIndex = null; }
+
+	// ───────────────────────────────────────────────────────────────
 
 	onMount(() => {
 		initSounds();
@@ -39,10 +94,18 @@
 		 ($gameState.playerColor === 'black' && $gameState.turn === 'b'))
 	);
 
+	// In modalità revisione il board non accetta mosse
+	const canMove = $derived(!isReviewing && isMyTurn);
+
 	const isWhiteActive = $derived($gameState.status === 'active' && $gameState.turn === 'w');
 	const isBlackActive = $derived($gameState.status === 'active' && $gameState.turn === 'b');
 
 	let lastMove = $state<{ from: string; to: string } | null>(null);
+
+	// Evidenzia la mossa corrente nella navigazione storica
+	const displayLastMove = $derived(
+		viewIndex === null ? lastMove : (history[viewIndex]?.move ?? null)
+	);
 
 	function handleMove(from: string, to: string, promotion?: string) {
 		lastMove = { from, to };
@@ -120,10 +183,10 @@
 			{/if}
 
 			<Board
-				fen={$gameState.fen}
+				fen={displayFen}
 				playerColor={$gameState.playerColor}
-				{isMyTurn}
-				{lastMove}
+				isMyTurn={canMove}
+				lastMove={displayLastMove}
 				onMove={handleMove}
 			/>
 		</div>
@@ -213,6 +276,15 @@
 			<button class="theme-btn" onclick={() => cycleTheme()} title="Cambia tema sonoro">
 				{themeLabel(currentTheme)}
 			</button>
+		</div>
+
+		<!-- Navigazione mosse -->
+		<div class="nav-row" class:reviewing={isReviewing}>
+			<button class="nav-btn" onclick={navFirst} disabled={atStart} title="Prima mossa">⏮</button>
+			<button class="nav-btn" onclick={navPrev}  disabled={atStart} title="Mossa precedente">◀</button>
+			<span class="nav-label" class:live={!isReviewing}>{navLabel}</span>
+			<button class="nav-btn" onclick={navNext}  disabled={atEnd}   title="Mossa successiva">▶</button>
+			<button class="nav-btn" onclick={navLast}  disabled={atEnd}   title="Ultima mossa">⏭</button>
 		</div>
 
 		<!-- Status partita -->
@@ -397,6 +469,53 @@
 		text-overflow: ellipsis;
 	}
 	.theme-btn:hover { border-color: var(--accent); color: var(--text); }
+
+	/* ── Move navigation ── */
+	.nav-row {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.3rem 0.4rem;
+		transition: border-color 0.2s;
+	}
+	.nav-row.reviewing {
+		border-color: var(--accent);
+	}
+	.nav-btn {
+		background: none;
+		border: none;
+		color: var(--text-muted);
+		font-size: 0.78rem;
+		padding: 0.3rem 0.45rem;
+		cursor: pointer;
+		border-radius: 5px;
+		transition: background 0.12s, color 0.12s;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+	.nav-btn:hover:not(:disabled) {
+		background: rgba(255,255,255,0.08);
+		color: var(--text);
+	}
+	.nav-btn:disabled {
+		opacity: 0.3;
+		cursor: default;
+	}
+	.nav-label {
+		flex: 1;
+		text-align: center;
+		font-size: 0.72rem;
+		font-weight: 600;
+		color: var(--text-muted);
+		letter-spacing: 0.02em;
+		white-space: nowrap;
+	}
+	.nav-label.live {
+		color: #e05050;
+	}
 
 	/* ═══════════════════════════════════════════════════════════
 	   MOBILE (≤ 768px)
