@@ -64,9 +64,11 @@ a:hover { text-decoration: underline; }
 }
 .sidebar-logo:hover { text-decoration: none; }
 
-.sidebar-logo-icon {
-	font-size: 1.6rem;
-	line-height: 1;
+.sidebar-logo-img {
+	width: 28px;
+	height: 28px;
+	border-radius: 6px;
+	flex-shrink: 0;
 }
 
 .sidebar-logo-text {
@@ -338,6 +340,12 @@ a:hover { text-decoration: underline; }
 	text-align: center;
 }
 .mobile-hamburger:hover { color: #fff; }
+.mobile-logo-icon {
+	width: 28px;
+	height: 28px;
+	border-radius: 6px;
+	flex-shrink: 0;
+}
 .mobile-logo-text {
 	font-size: 1rem;
 	font-weight: 700;

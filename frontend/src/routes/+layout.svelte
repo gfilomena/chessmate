@@ -1,5 +1,6 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
+	import logoSvg from '$lib/assets/logo.svg';
 	import '../app.css';
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
@@ -57,7 +58,8 @@
 	>
 		{sidebarOpen ? '✕' : '☰'}
 	</button>
-	<span class="mobile-logo-text">♟ Chess Clone</span>
+	<img src={favicon} alt="" class="mobile-logo-icon" aria-hidden="true" />
+	<span class="mobile-logo-text">Chess Clone</span>
 	{#if $user}
 		<div class="mobile-user-chip">{initial}</div>
 	{/if}
@@ -77,7 +79,7 @@
 	<aside class="sidebar" class:sidebar-open={sidebarOpen}>
 
 		<a href="/" class="sidebar-logo" onclick={() => sidebarOpen = false}>
-			<span class="sidebar-logo-icon">♟</span>
+			<img src={favicon} alt="" class="sidebar-logo-img" aria-hidden="true" />
 			<span class="sidebar-logo-text">Chess Clone</span>
 		</a>
 
