@@ -8,6 +8,7 @@
 	import { connectToGame, sendMove, sendResign, sendOfferDraw, sendDrawResponse, disconnect } from '$lib/ws/socket';
 	import { user } from '$lib/stores/auth';
 	import { initSounds, playSound, toggleMute, cycleTheme, soundTheme, themeLabel, type SoundName } from '$lib/chess/sounds';
+	import { computeCaptured } from '$lib/chess/captured';
 
 	const gameId = $page.params.id!;
 
@@ -134,6 +135,13 @@
 	// In modalità revisione il board non accetta mosse
 	const canMove = $derived(!isReviewing && isMyTurn);
 
+	// ── Pezzi catturati ─────────────────────────────────────────────
+	const captured   = $derived(computeCaptured(displayFen));
+	const myCaptured = $derived($gameState.playerColor === 'white' ? captured.byWhite : captured.byBlack);
+	const oppCaptured= $derived($gameState.playerColor === 'white' ? captured.byBlack : captured.byWhite);
+	const myAdv      = $derived($gameState.playerColor === 'white' ? captured.advantage : -captured.advantage);
+	const oppAdv     = $derived(-myAdv);
+
 	const isWhiteActive = $derived($gameState.status === 'active' && $gameState.turn === 'w');
 	const isBlackActive = $derived($gameState.status === 'active' && $gameState.turn === 'b');
 
@@ -197,6 +205,12 @@
 				<span class="player-name">
 					{$gameState.playerColor === 'white' ? 'Nero' : 'Bianco'}
 				</span>
+				{#if oppCaptured.length > 0 || oppAdv > 0}
+					<div class="captured-row">
+						{#each oppCaptured as p}<span class="cap-piece">{p}</span>{/each}
+						{#if oppAdv > 0}<span class="cap-adv">+{oppAdv}</span>{/if}
+					</div>
+				{/if}
 			</div>
 			<Timer
 				ms={$gameState.playerColor === 'white' ? $gameState.blackMs : $gameState.whiteMs}
@@ -264,6 +278,12 @@
 			<div class="player-info">
 				<span class="player-name">{$user?.username ?? 'Tu'}</span>
 				<span class="player-elo">{$user?.elo_rapid ?? ''}</span>
+				{#if myCaptured.length > 0 || myAdv > 0}
+					<div class="captured-row">
+						{#each myCaptured as p}<span class="cap-piece">{p}</span>{/each}
+						{#if myAdv > 0}<span class="cap-adv">+{myAdv}</span>{/if}
+					</div>
+				{/if}
 			</div>
 			<Timer
 				ms={$gameState.playerColor === 'white' ? $gameState.whiteMs : $gameState.blackMs}
@@ -404,6 +424,25 @@
 	.player-elo {
 		font-size: 0.8rem;
 		color: var(--text-muted);
+	}
+
+	.captured-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.04rem;
+		margin-top: 0.12rem;
+	}
+	.cap-piece {
+		font-size: 0.82rem;
+		line-height: 1;
+		opacity: 0.8;
+	}
+	.cap-adv {
+		font-size: 0.68rem;
+		font-weight: 700;
+		color: var(--accent);
+		margin-left: 0.2rem;
 	}
 
 	.board-container {

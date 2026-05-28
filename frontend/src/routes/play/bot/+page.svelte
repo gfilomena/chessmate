@@ -6,6 +6,7 @@
 	import { StockfishEngine } from '$lib/chess/stockfish';
 	import { user, authLoading } from '$lib/stores/auth';
 	import { initSounds, playSound, toggleMute, cycleTheme, soundTheme, themeLabel } from '$lib/chess/sounds';
+	import { computeCaptured } from '$lib/chess/captured';
 
 	// ── Auth guard ────────────────────────────────────────────────────────────
 	$effect(() => {
@@ -160,6 +161,13 @@
 
 	// In modalità revisione il board non accetta mosse
 	const canMove = $derived(!isReviewing && isPlayerTurn);
+
+	// ── Pezzi catturati ─────────────────────────────────────────────
+	const captured    = $derived(computeCaptured(displayFen));
+	const myCaptured  = $derived(playerColor === 'white' ? captured.byWhite : captured.byBlack);
+	const botCaptured = $derived(playerColor === 'white' ? captured.byBlack : captured.byWhite);
+	const myAdv       = $derived(playerColor === 'white' ? captured.advantage : -captured.advantage);
+	const botAdv      = $derived(-myAdv);
 
 	const movePairs = $derived(buildMovePairs(moveHistory));
 
@@ -384,6 +392,12 @@
 						<span class="inline-badge" style="background:{selectedBot.color}">{selectedBot.badge}</span>
 						· ELO {selectedBot.elo}
 					</span>
+					{#if botCaptured.length > 0 || botAdv > 0}
+						<div class="captured-row">
+							{#each botCaptured as p}<span class="cap-piece">{p}</span>{/each}
+							{#if botAdv > 0}<span class="cap-adv">+{botAdv}</span>{/if}
+						</div>
+					{/if}
 				</div>
 				{#if isThinking}
 					<div class="thinking-badge">
@@ -449,6 +463,12 @@
 				<div class="player-info">
 					<span class="player-name">👤 {$user?.username ?? 'Tu'}</span>
 					<span class="player-elo">ELO {$user?.elo_rapid ?? '—'}</span>
+					{#if myCaptured.length > 0 || myAdv > 0}
+						<div class="captured-row">
+							{#each myCaptured as p}<span class="cap-piece">{p}</span>{/each}
+							{#if myAdv > 0}<span class="cap-adv">+{myAdv}</span>{/if}
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -771,6 +791,25 @@
 .player-elo {
 	font-size: 0.8rem;
 	color: var(--text-muted);
+}
+
+.captured-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.04rem;
+	margin-top: 0.12rem;
+}
+.cap-piece {
+	font-size: 0.82rem;
+	line-height: 1;
+	opacity: 0.8;
+}
+.cap-adv {
+	font-size: 0.68rem;
+	font-weight: 700;
+	color: var(--accent);
+	margin-left: 0.2rem;
 }
 
 .thinking-badge {
