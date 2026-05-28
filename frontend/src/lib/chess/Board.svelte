@@ -305,9 +305,9 @@
 					{/if}
 
 					<!-- Move classification badge (top-right corner) -->
-					{#if squareBadge && square === squareBadge.square && svg}
-						<span class="sq-badge" style="background:{squareBadge.color}">
-							{squareBadge.symbol || '·'}
+					{#if squareBadge && square === squareBadge.square && svg && squareBadge.symbol}
+						<span class="sq-badge" style="--badge-bg:{squareBadge.color}">
+							{squareBadge.symbol}
 						</span>
 					{/if}
 
@@ -398,7 +398,6 @@
 		border: none;
 		cursor: grab;
 		padding: 0;
-		overflow: hidden;
 	}
 	.square:active { cursor: grabbing; }
 
@@ -476,21 +475,23 @@
 	/* ── Move classification badge ──────────────────────────────── */
 	.sq-badge {
 		position: absolute;
-		top: 3px;
-		right: 3px;
-		width: 14px;
-		height: 14px;
+		top: 5%;
+		right: 5%;
+		width: 28%;
+		height: 28%;
 		border-radius: 50%;
+		background: var(--badge-bg, #888);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 0.42rem;
-		font-weight: 800;
+		font-size: clamp(7px, 1.8vw, 11px);
+		font-weight: 900;
 		color: #fff;
-		z-index: 5;
+		z-index: 6;
 		pointer-events: none;
 		line-height: 1;
-		box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+		box-shadow: 0 2px 5px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.35);
+		letter-spacing: -0.04em;
 	}
 
 	/* ── Arrow overlay ──────────────────────────────────────────── */
