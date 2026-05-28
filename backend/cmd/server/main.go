@@ -15,47 +15,31 @@ import (
 	"chess-clone/backend/internal/matchmaking"
 )
 
-// staticFiles contiene il build SvelteKit compilato.
-// In sviluppo la cartella è vuota (.gitkeep) — il frontend gira separato su :5174.
-// In produzione viene popolata dal Makefile/Dockerfile prima di go build.
-//
 //go:embed all:static
 var staticFiles embed.FS
 
 func main() {
-	// Carica .env prima di tutto
 	loadDotEnv(".env")
 
-	// Config da variabili ambiente
 	pgURL := getEnv("DATABASE_URL", "postgres://chess:chess_secret@localhost:5433/chessdb")
-	redisURL := getEnv("REDIS_URL", "redis://localhost:6380")
 	port := getEnv("PORT", "8080")
 
-	// Connessioni DB
 	pg, err := db.NewPostgres(pgURL)
 	if err != nil {
 		log.Fatalf("postgres connection failed: %v", err)
 	}
 	defer pg.Close()
 
-	rdb, err := db.NewRedis(redisURL)
-	if err != nil {
-		log.Fatalf("redis connection failed: %v", err)
-	}
-	defer rdb.Close()
-
-	// Matchmaker (goroutine in background)
-	mm := matchmaking.NewMatchmaker(pg, rdb)
+	// Matchmaker in-memory (nessun Redis)
+	mm := matchmaking.NewMatchmaker(pg)
 	go mm.Run(context.Background())
 
-	// Sottosistema statico — estrae "static/" dall'FS embedded
 	staticFS, err := fs.Sub(staticFiles, "static")
 	if err != nil {
 		log.Fatalf("errore fs.Sub su static: %v", err)
 	}
 
-	// Router
-	router := api.NewRouter(pg, rdb, staticFS)
+	router := api.NewRouter(pg, mm, staticFS)
 
 	log.Printf("Server avviato su :%s", port)
 	if err := http.ListenAndServe(":"+port, router); err != nil {
@@ -70,12 +54,10 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-// loadDotEnv legge un file .env e setta le variabili d'ambiente.
-// Non sovrascrive variabili già presenti nell'ambiente di sistema.
 func loadDotEnv(filename string) {
 	f, err := os.Open(filename)
 	if err != nil {
-		return // .env opzionale, nessun errore se non esiste
+		return
 	}
 	defer f.Close()
 
@@ -95,6 +77,5 @@ func loadDotEnv(filename string) {
 			os.Setenv(key, val)
 		}
 	}
-
 	log.Println(".env caricato")
 }

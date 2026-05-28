@@ -5,43 +5,78 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"chess-clone/backend/internal/db"
 )
 
-// Importiamo solo il necessario — matchmaking.GetMatch NON viene usato qui
-// per evitare conflitti con /api/matchmaking/stream (entrambi userebbero GetDel)
-
 const (
-	inviteKeyPfx   = "invite:"
 	inviteTTL      = 90 * time.Second
-	friendMatchPfx = "friend_match:"
 	friendMatchTTL = 60 * time.Second
 )
 
-// InvitePayload è il dato salvato in Redis e inviato al client via SSE
+// InvitePayload è il dato dell'invito inviato via SSE
 type InvitePayload struct {
 	FromID       string `json:"from_id"`
 	FromUsername string `json:"from_username"`
 	FromElo      int    `json:"from_elo"`
 }
 
+type inviteEntry struct {
+	key       string // "toID:fromID"
+	payload   InvitePayload
+	expiresAt time.Time
+}
+
+type friendMatchEntry struct {
+	gameID    string
+	expiresAt time.Time
+}
+
+// InvitationHandler gestisce gli inviti tra amici in memoria
 type InvitationHandler struct {
-	pg  *db.Postgres
-	rdb *db.Redis
+	pg           *db.Postgres
+	mu           sync.RWMutex
+	invites      map[string]inviteEntry      // key "toID:fromID" → entry
+	friendMatch  map[string]friendMatchEntry // fromID → match pendente
 }
 
-func NewInvitationHandler(pg *db.Postgres, rdb *db.Redis) *InvitationHandler {
-	return &InvitationHandler{pg: pg, rdb: rdb}
+func NewInvitationHandler(pg *db.Postgres) *InvitationHandler {
+	h := &InvitationHandler{
+		pg:          pg,
+		invites:     make(map[string]inviteEntry),
+		friendMatch: make(map[string]friendMatchEntry),
+	}
+	go h.cleanup()
+	return h
 }
 
-func inviteRedisKey(toID, fromID string) string {
-	return fmt.Sprintf("%s%s:%s", inviteKeyPfx, toID, fromID)
+func (h *InvitationHandler) cleanup() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		now := time.Now()
+		h.mu.Lock()
+		for k, e := range h.invites {
+			if now.After(e.expiresAt) {
+				delete(h.invites, k)
+			}
+		}
+		for k, e := range h.friendMatch {
+			if now.After(e.expiresAt) {
+				delete(h.friendMatch, k)
+			}
+		}
+		h.mu.Unlock()
+	}
+}
+
+func inviteKey(toID, fromID string) string {
+	return fmt.Sprintf("%s:%s", toID, fromID)
 }
 
 // POST /api/invitations
-// Body: {"to_user_id": "..."}
 func (h *InvitationHandler) SendInvite(w http.ResponseWriter, r *http.Request) {
 	fromID, err := getUserIDFromCookie(r)
 	if err != nil {
@@ -70,19 +105,19 @@ func (h *InvitationHandler) SendInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload := InvitePayload{
-		FromID:       fromID,
-		FromUsername: fromUsername,
-		FromElo:      fromElo,
+	key := inviteKey(body.ToUserID, fromID)
+	h.mu.Lock()
+	h.invites[key] = inviteEntry{
+		key:       key,
+		payload:   InvitePayload{FromID: fromID, FromUsername: fromUsername, FromElo: fromElo},
+		expiresAt: time.Now().Add(inviteTTL),
 	}
-	raw, _ := json.Marshal(payload)
-	h.rdb.Client.Set(r.Context(), inviteRedisKey(body.ToUserID, fromID), raw, inviteTTL)
+	h.mu.Unlock()
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "invited"})
 }
 
 // DELETE /api/invitations/{fromID}
-// Rifiuta (o cancella) un invito ricevuto/inviato
 func (h *InvitationHandler) DeclineInvite(w http.ResponseWriter, r *http.Request) {
 	toID, err := getUserIDFromCookie(r)
 	if err != nil {
@@ -90,12 +125,13 @@ func (h *InvitationHandler) DeclineInvite(w http.ResponseWriter, r *http.Request
 		return
 	}
 	fromID := r.PathValue("fromID")
-	h.rdb.Client.Del(r.Context(), inviteRedisKey(toID, fromID))
+	h.mu.Lock()
+	delete(h.invites, inviteKey(toID, fromID))
+	h.mu.Unlock()
 	writeJSON(w, http.StatusOK, map[string]string{"status": "declined"})
 }
 
 // POST /api/invitations/{fromID}/accept
-// Accetta un invito → crea partita → notifica invitante tramite friend_match key
 func (h *InvitationHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	toID, err := getUserIDFromCookie(r)
 	if err != nil {
@@ -103,27 +139,32 @@ func (h *InvitationHandler) AcceptInvite(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	fromID := r.PathValue("fromID")
+	key := inviteKey(toID, fromID)
 
-	ctx := r.Context()
-	key := inviteRedisKey(toID, fromID)
+	// Atomico: leggi e cancella
+	h.mu.Lock()
+	entry, ok := h.invites[key]
+	if ok {
+		delete(h.invites, key)
+	}
+	h.mu.Unlock()
 
-	// Atomically get & delete (evita race se due richieste arrivano insieme)
-	raw, err := h.rdb.Client.GetDel(ctx, key).Result()
-	if err != nil || raw == "" {
+	if !ok || time.Now().After(entry.expiresAt) {
 		writeError(w, http.StatusNotFound, "INVITE_NOT_FOUND", "Invito non trovato o scaduto")
 		return
 	}
 
-	gameID, err := h.createFriendGame(ctx, fromID, toID)
+	gameID, err := h.createFriendGame(r.Context(), fromID, toID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "SERVER_ERROR", "Errore creazione partita")
 		return
 	}
 
-	// Notifica l'invitante: il suo SSE stream leggerà questo key e farà redirect
-	h.rdb.Client.Set(ctx, friendMatchPfx+fromID, gameID, friendMatchTTL)
+	// Notifica l'invitante via SSE
+	h.mu.Lock()
+	h.friendMatch[fromID] = friendMatchEntry{gameID: gameID, expiresAt: time.Now().Add(friendMatchTTL)}
+	h.mu.Unlock()
 
-	// L'invitato riceve il game_id direttamente in risposta HTTP → redirect immediato
 	writeJSON(w, http.StatusOK, map[string]string{"game_id": gameID})
 }
 
@@ -148,10 +189,7 @@ func determineFriendColors(ctx context.Context, pg *db.Postgres, u1, u2 string) 
 	return u2, u1
 }
 
-// GET /api/invitations/stream
-// SSE sempre aperto nel layout:
-//   - emette "invited" quando arriva un invito indirizzato a questo utente
-//   - emette "matched" quando un invito inviato da questo utente viene accettato
+// GET /api/invitations/stream — SSE sempre aperto
 func (h *InvitationHandler) Stream(w http.ResponseWriter, r *http.Request) {
 	myID, err := getUserIDFromCookie(r)
 	if err != nil {
@@ -178,7 +216,7 @@ func (h *InvitationHandler) Stream(w http.ResponseWriter, r *http.Request) {
 	pingTicker := time.NewTicker(15 * time.Second)
 	defer pingTicker.Stop()
 
-	// Traccia gli inviti già notificati per evitare duplicati nella sessione
+	// Chiavi già notificate in questa sessione (evita duplicati)
 	notified := make(map[string]bool)
 
 	for {
@@ -191,45 +229,49 @@ func (h *InvitationHandler) Stream(w http.ResponseWriter, r *http.Request) {
 			flusher.Flush()
 
 		case <-ticker.C:
-			// 1. Controlla se qualcuno ha accettato un invito che abbiamo inviato
-			//    (usa chiave diversa da matchmaking per evitare conflitti)
-			if gameID, err := h.rdb.Client.GetDel(r.Context(), friendMatchPfx+myID).Result(); err == nil && gameID != "" {
-				fmt.Fprintf(w, "event: matched\ndata: {\"game_id\":\"%s\"}\n\n", gameID)
+			// 1. Match da invito accettato (io ero l'invitante)
+			h.mu.Lock()
+			fm, hasFM := h.friendMatch[myID]
+			if hasFM {
+				delete(h.friendMatch, myID)
+			}
+			h.mu.Unlock()
+
+			if hasFM && !time.Now().After(fm.expiresAt) {
+				fmt.Fprintf(w, "event: matched\ndata: {\"game_id\":\"%s\"}\n\n", fm.gameID)
 				flusher.Flush()
 				return
 			}
 
-			// 2. Controlla se abbiamo ricevuto nuovi inviti (pattern invite:{myID}:*)
-			pattern := fmt.Sprintf("%s%s:*", inviteKeyPfx, myID)
-			keys, err := h.rdb.Client.Keys(r.Context(), pattern).Result()
-			if err != nil {
-				continue
+			// 2. Inviti ricevuti (io sono il destinatario)
+			now := time.Now()
+			h.mu.RLock()
+			toNotify := make([]inviteEntry, 0)
+			for k, e := range h.invites {
+				// Filtra per destinatario: la chiave è "myID:fromID"
+				if len(k) > len(myID)+1 && k[:len(myID)] == myID && k[len(myID)] == ':' {
+					if !notified[k] && !now.After(e.expiresAt) {
+						toNotify = append(toNotify, e)
+					}
+				}
 			}
-			for _, key := range keys {
-				if notified[key] {
-					continue
-				}
-				raw, err := h.rdb.Client.Get(r.Context(), key).Result()
-				if err != nil {
-					continue
-				}
-				var payload InvitePayload
-				if err := json.Unmarshal([]byte(raw), &payload); err != nil {
-					continue
-				}
-				data, _ := json.Marshal(payload)
+			h.mu.RUnlock()
+
+			for _, e := range toNotify {
+				data, _ := json.Marshal(e.payload)
 				fmt.Fprintf(w, "event: invited\ndata: %s\n\n", data)
 				flusher.Flush()
-				notified[key] = true
+				notified[e.key] = true
 			}
 
-			// 3. Rimuovi dal notified le chiavi che non esistono più (invito rifiutato/scaduto)
+			// 3. Rimuovi dal notified le chiavi scadute/cancellate
+			h.mu.RLock()
 			for k := range notified {
-				exists, _ := h.rdb.Client.Exists(r.Context(), k).Result()
-				if exists == 0 {
+				if _, exists := h.invites[k]; !exists {
 					delete(notified, k)
 				}
 			}
+			h.mu.RUnlock()
 		}
 	}
 }

@@ -1,6 +1,6 @@
 .PHONY: dev db db-stop backend frontend install build build-docker
 
-# Avvia PostgreSQL + Redis
+# Avvia PostgreSQL
 db:
 	docker compose up -d
 	@echo "Aspetto che i DB siano pronti..."
@@ -55,7 +55,7 @@ build:
 	@echo "==> Build binario Go (con frontend embedded)..."
 	cd backend && CGO_ENABLED=0 go build -ldflags="-s -w" -o ../chess-clone ./cmd/server
 	@echo "==> Fatto! Binario: ./chess-clone"
-	@echo "    Avvia con: DATABASE_URL=... REDIS_URL=... ./chess-clone"
+	@echo "    Avvia con: DATABASE_URL=... ./chess-clone"
 
 # Build via Docker (simula esattamente il deploy Railway)
 build-docker:

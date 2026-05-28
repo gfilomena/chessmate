@@ -12,12 +12,11 @@ import (
 )
 
 type AuthHandler struct {
-	pg  *db.Postgres
-	rdb *db.Redis
+	pg *db.Postgres
 }
 
-func NewAuthHandler(pg *db.Postgres, rdb *db.Redis) *AuthHandler {
-	return &AuthHandler{pg: pg, rdb: rdb}
+func NewAuthHandler(pg *db.Postgres) *AuthHandler {
+	return &AuthHandler{pg: pg}
 }
 
 var jwtSecret = []byte("change_me_in_production")

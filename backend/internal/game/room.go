@@ -20,34 +20,32 @@ type clientMessage struct {
 	msg    InboundMsg
 }
 
-// Room gestisce una partita: stato, timer, messaggi
+// Room gestisce una partita: stato, timer in-memory, messaggi
 type Room struct {
 	gameID string
-	white  *Client // nil se non connesso
+	white  *Client
 	black  *Client
 
 	chess       *chess.Game
-	timeControl int // secondi (es. 600)
+	timeControl int // secondi
 	started     bool
+	timer       timerState // in-memory, nessun Redis
 
 	pg  *db.Postgres
-	rdb *db.Redis
 	hub *Hub
 
 	inbound            chan clientMessage
 	clientDisconnected chan *Client
 
-	// Timer disconnessione
 	whiteReconnectTimer *time.Timer
 	blackReconnectTimer *time.Timer
 }
 
-func newRoom(gameID string, pg *db.Postgres, rdb *db.Redis, hub *Hub) *Room {
+func newRoom(gameID string, pg *db.Postgres, hub *Hub) *Room {
 	return &Room{
 		gameID:             gameID,
 		chess:              chess.NewGame(),
 		pg:                 pg,
-		rdb:                rdb,
 		hub:                hub,
 		inbound:            make(chan clientMessage, 32),
 		clientDisconnected: make(chan *Client, 4),
@@ -57,18 +55,12 @@ func newRoom(gameID string, pg *db.Postgres, rdb *db.Redis, hub *Hub) *Room {
 // Run è il loop principale della room (una goroutine per partita)
 func (r *Room) Run() {
 	defer r.hub.Remove(r.gameID)
-
-	// Carica time_control dal DB
 	r.loadTimeControl()
 
 	for {
 		select {
-
-		// Messaggio da un client
 		case cm := <-r.inbound:
 			r.handleMessage(cm)
-
-		// Client disconnesso
 		case c := <-r.clientDisconnected:
 			r.handleDisconnect(c)
 		}
@@ -82,7 +74,6 @@ func (r *Room) Join(c *Client) error {
 		if r.white != nil && r.white.UserID != c.UserID {
 			return fmt.Errorf("posto bianco già occupato")
 		}
-		// Riconnessione
 		if r.whiteReconnectTimer != nil {
 			r.whiteReconnectTimer.Stop()
 			r.whiteReconnectTimer = nil
@@ -103,28 +94,24 @@ func (r *Room) Join(c *Client) error {
 		return fmt.Errorf("colore non valido: %s", c.Color)
 	}
 
-	// Avvia la partita se entrambi connessi
 	if r.white != nil && r.black != nil && !r.started {
 		r.startGame()
 	}
-
 	return nil
 }
 
 func (r *Room) startGame() {
 	r.started = true
-	ctx := context.Background()
-	InitTimer(ctx, r.rdb, r.gameID, r.timeControl)
+	r.timer = newTimerState(r.timeControl)
 
-	// Aggiorna status nel DB
+	ctx := context.Background()
 	r.pg.Pool.Exec(ctx,
 		`UPDATE games SET status = 'active', started_at = NOW() WHERE id = $1`,
 		r.gameID,
 	)
 
-	// Manda stato iniziale a entrambi
 	fen := r.chess.Position().String()
-	wMs, bMs := GetTimer(ctx, r.rdb, r.gameID)
+	wMs, bMs := r.timer.currentTimes("white")
 
 	r.white.Send(OutboundMsg{
 		Type: "game_start",
@@ -153,13 +140,10 @@ func (r *Room) handleMessage(cm clientMessage) {
 			return
 		}
 		r.handleMove(cm.client, p)
-
 	case "resign":
 		r.handleResign(cm.client)
-
 	case "offer_draw":
 		r.handleDrawOffer(cm.client)
-
 	case "draw_response":
 		var p DrawResponsePayload
 		if err := json.Unmarshal(cm.msg.Payload, &p); err != nil {
@@ -174,7 +158,6 @@ func (r *Room) handleMove(c *Client, p MovePayload) {
 		return
 	}
 
-	// Verifica che sia il turno del client
 	turn := r.chess.Position().Turn()
 	if (turn == chess.White && c.Color != "white") ||
 		(turn == chess.Black && c.Color != "black") {
@@ -182,13 +165,11 @@ func (r *Room) handleMove(c *Client, p MovePayload) {
 		return
 	}
 
-	// Costruisce la stringa UCI (es. "e2e4" o "e7e8q" per promozione)
 	uci := p.From + p.To
 	if p.Promotion != "" {
 		uci += p.Promotion
 	}
 
-	// Valida e applica la mossa
 	move, err := chess.UCINotation{}.Decode(r.chess.Position(), uci)
 	if err != nil {
 		c.Send(OutboundMsg{Type: "move_invalid", Payload: ErrorPayload{Reason: "mossa illegale"}})
@@ -199,12 +180,8 @@ func (r *Room) handleMove(c *Client, p MovePayload) {
 		return
 	}
 
-	// Aggiorna timer
-	ctx := context.Background()
-	wMs, bMs, timedOut, loser, err := RecordMove(ctx, r.rdb, r.gameID)
-	if err != nil {
-		log.Printf("timer error: %v", err)
-	}
+	// Aggiorna timer in-memory
+	wMs, bMs, timedOut, loser := r.timer.recordMove(c.Color)
 	if timedOut {
 		winner := "black"
 		if loser == "black" {
@@ -214,7 +191,6 @@ func (r *Room) handleMove(c *Client, p MovePayload) {
 		return
 	}
 
-	// FEN e PGN aggiornati
 	newFen := r.chess.Position().String()
 	pgn := r.chess.String()
 	turnStr := "w"
@@ -222,7 +198,6 @@ func (r *Room) handleMove(c *Client, p MovePayload) {
 		turnStr = "b"
 	}
 
-	// Broadcast mossa ai due client
 	r.broadcast(OutboundMsg{
 		Type: "move_made",
 		Payload: MoveMadePayload{
@@ -233,10 +208,9 @@ func (r *Room) handleMove(c *Client, p MovePayload) {
 		},
 	})
 
-	// Salva PGN nel DB
+	ctx := context.Background()
 	r.pg.Pool.Exec(ctx, `UPDATE games SET pgn = $1 WHERE id = $2`, pgn, r.gameID)
 
-	// Controlla fine partita
 	r.checkOutcome()
 }
 
@@ -249,9 +223,8 @@ func (r *Room) handleResign(c *Client) {
 }
 
 func (r *Room) handleDrawOffer(c *Client) {
-	opponent := r.opponent(c)
-	if opponent != nil {
-		opponent.Send(OutboundMsg{Type: "draw_offered"})
+	if opp := r.opponent(c); opp != nil {
+		opp.Send(OutboundMsg{Type: "draw_offered"})
 	}
 }
 
@@ -259,10 +232,8 @@ func (r *Room) handleDrawResponse(c *Client, accepted bool) {
 	if accepted {
 		r.endGame("draw", "draw_agreed")
 	} else {
-		// Informiamo chi ha offerto la patta
-		opponent := r.opponent(c)
-		if opponent != nil {
-			opponent.Send(OutboundMsg{Type: "draw_declined"})
+		if opp := r.opponent(c); opp != nil {
+			opp.Send(OutboundMsg{Type: "draw_declined"})
 		}
 	}
 }
@@ -270,23 +241,19 @@ func (r *Room) handleDrawResponse(c *Client, accepted bool) {
 func (r *Room) handleDisconnect(c *Client) {
 	log.Printf("client disconnesso: %s (%s)", c.UserID, c.Color)
 
-	// Notifica avversario
-	opponent := r.opponent(c)
-	if opponent != nil {
-		opponent.Send(OutboundMsg{
+	if opp := r.opponent(c); opp != nil {
+		opp.Send(OutboundMsg{
 			Type:    "opponent_disconnected",
 			Payload: DisconnectPayload{TimeoutSeconds: int(disconnectTimeout.Seconds())},
 		})
 	}
 
-	// Azzera il riferimento
 	if c.Color == "white" {
 		r.white = nil
 	} else {
 		r.black = nil
 	}
 
-	// Avvia timer abbandono (60s)
 	color := c.Color
 	timer := time.AfterFunc(disconnectTimeout, func() {
 		if r.started && r.chess.Outcome() == chess.NoOutcome {
@@ -312,41 +279,26 @@ func (r *Room) checkOutcome() {
 	if outcome == chess.NoOutcome {
 		return
 	}
-
-	method := r.chess.Method()
-	reason := methodToReason(method)
-	result := outcomeToResult(outcome)
-	r.endGame(result, reason)
+	r.endGame(outcomeToResult(outcome), methodToReason(r.chess.Method()))
 }
 
 func (r *Room) endGame(result, reason string) {
 	pgn := r.chess.String()
 	ctx := context.Background()
 
-	// Aggiorna DB
 	r.pg.Pool.Exec(ctx,
 		`UPDATE games SET status='finished', result=$1, finish_reason=$2,
 		 finished_at=NOW(), pgn=$3 WHERE id=$4`,
 		result, reason, pgn, r.gameID,
 	)
 
-	// Aggiorna ELO
 	r.updateELO(result, ctx)
 
-	// Notifica entrambi i client
 	r.broadcast(OutboundMsg{
 		Type: "game_over",
-		Payload: GameOverPayload{
-			Result: result,
-			Reason: reason,
-			PGN:    pgn,
-		},
+		Payload: GameOverPayload{Result: result, Reason: reason, PGN: pgn},
 	})
 
-	// Pulisci timer Redis
-	DeleteTimer(ctx, r.rdb, r.gameID)
-
-	// Ferma i timer disconnessione
 	if r.whiteReconnectTimer != nil {
 		r.whiteReconnectTimer.Stop()
 	}
@@ -358,7 +310,6 @@ func (r *Room) endGame(result, reason string) {
 }
 
 func (r *Room) updateELO(result string, ctx context.Context) {
-	// Recupera ELO attuali
 	var whiteElo, blackElo int
 	var whiteID, blackID string
 
@@ -378,7 +329,6 @@ func (r *Room) updateELO(result string, ctx context.Context) {
 
 	r.pg.Pool.Exec(ctx, `UPDATE users SET elo_rapid=$1 WHERE id=$2`, newWhiteElo, whiteID)
 	r.pg.Pool.Exec(ctx, `UPDATE users SET elo_rapid=$1 WHERE id=$2`, newBlackElo, blackID)
-
 	r.pg.Pool.Exec(ctx,
 		`INSERT INTO elo_history (user_id, game_id, game_type, elo_before, elo_after)
 		 VALUES ($1,$2,'rapid',$3,$4),($5,$2,'rapid',$6,$7)`,
@@ -387,11 +337,10 @@ func (r *Room) updateELO(result string, ctx context.Context) {
 	)
 }
 
-// Algoritmo ELO standard (K=32)
 func calculateELO(whiteElo, blackElo int, result string) (int, int) {
 	const K = 32
 	expected := func(a, b int) float64 {
-		return 1.0 / (1.0 + pow10(float64(b-a)/400.0))
+		return 1.0 / (1.0 + math.Pow(10, float64(b-a)/400.0))
 	}
 	eW := expected(whiteElo, blackElo)
 	eB := expected(blackElo, whiteElo)
@@ -406,13 +355,7 @@ func calculateELO(whiteElo, blackElo int, result string) (int, int) {
 		sW, sB = 0.5, 0.5
 	}
 
-	newW := whiteElo + int(K*(sW-eW))
-	newB := blackElo + int(K*(sB-eB))
-	return newW, newB
-}
-
-func pow10(x float64) float64 {
-	return math.Pow(10, x)
+	return whiteElo + int(K*(sW-eW)), blackElo + int(K*(sB-eB))
 }
 
 func (r *Room) broadcast(msg OutboundMsg) {
@@ -433,11 +376,10 @@ func (r *Room) opponent(c *Client) *Client {
 
 func (r *Room) loadTimeControl() {
 	var tc int
-	err := r.pg.Pool.QueryRow(context.Background(),
+	if err := r.pg.Pool.QueryRow(context.Background(),
 		`SELECT time_control FROM games WHERE id = $1`, r.gameID,
-	).Scan(&tc)
-	if err != nil {
-		tc = 600 // default 10 min
+	).Scan(&tc); err != nil {
+		tc = 600
 	}
 	r.timeControl = tc
 }
