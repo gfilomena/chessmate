@@ -44,10 +44,11 @@
 		fen: string;
 		move: { from: string; to: string } | null;
 		sound: import('$lib/chess/sounds').SoundName | null;
+		san:   string | null;
 	}
 
 	function buildBotHistory(moves: string[]): HistoryEntry[] {
-		const entries: HistoryEntry[] = [{ fen: new Chess().fen(), move: null, sound: null }];
+		const entries: HistoryEntry[] = [{ fen: new Chess().fen(), move: null, sound: null, san: null }];
 		const replay = new Chess();
 		for (const san of moves) {
 			try {
@@ -56,7 +57,7 @@
 					const inCheck   = replay.inCheck();
 					const isCapture = mv.flags.includes('c') || mv.flags.includes('e');
 					const sound = inCheck ? 'check' : isCapture ? 'capture' : 'move';
-					entries.push({ fen: replay.fen(), move: { from: mv.from, to: mv.to }, sound });
+					entries.push({ fen: replay.fen(), move: { from: mv.from, to: mv.to }, sound, san: mv.san });
 				}
 			} catch {}
 		}
@@ -64,11 +65,17 @@
 	}
 
 	let viewIndex = $state<number | null>(null); // null = live
+	let stripEl   = $state<HTMLElement | null>(null);
 
-	const botHistory  = $derived(buildBotHistory(moveHistory));
-	const isReviewing = $derived(viewIndex !== null);
-	const atStart     = $derived(viewIndex === 0);
-	const atEnd       = $derived(viewIndex === null);
+	const botHistory      = $derived(buildBotHistory(moveHistory));
+	const isReviewing     = $derived(viewIndex !== null);
+	const atStart         = $derived(viewIndex === 0);
+	const atEnd           = $derived(viewIndex === null);
+	const timelinePercent = $derived(
+		botHistory.length <= 1 || viewIndex === null
+			? 100
+			: Math.round((viewIndex / (botHistory.length - 1)) * 100)
+	);
 
 	const displayFen = $derived(
 		viewIndex === null ? fen : (botHistory[viewIndex]?.fen ?? fen)
@@ -85,6 +92,11 @@
 		if (s) playSound(s);
 	}
 
+	function navTo(idx: number) {
+		if (idx <= 0)                      { viewIndex = 0; }
+		else if (idx >= botHistory.length - 1) { viewIndex = null; }
+		else { viewIndex = idx; playNavSound(idx); }
+	}
 	function navFirst() { viewIndex = 0; }
 	function navPrev() {
 		const idx = viewIndex ?? botHistory.length - 1;
@@ -92,14 +104,26 @@
 	}
 	function navNext() {
 		if (viewIndex === null) return;
-		if (viewIndex < botHistory.length - 1) {
-			viewIndex++;
-			playNavSound(viewIndex);
-		} else {
-			viewIndex = null;
-		}
+		if (viewIndex < botHistory.length - 1) { viewIndex++; playNavSound(viewIndex); }
+		else viewIndex = null;
 	}
 	function navLast() { viewIndex = null; }
+
+	// Auto-scroll strip al chip attivo
+	$effect(() => {
+		const idx = viewIndex ?? botHistory.length - 1;
+		if (!stripEl) return;
+		(stripEl.children[idx] as HTMLElement | undefined)
+			?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+	});
+
+	// Se il bot muove mentre si è in revisione → torna a live
+	let prevHistLen = 0;
+	$effect(() => {
+		const len = botHistory.length;
+		if (len > prevHistLen && prevHistLen > 0 && isReviewing) viewIndex = null;
+		prevHistLen = len;
+	});
 	// ──────────────────────────────────────────────────────────────────────────
 
 	// ── Engine ────────────────────────────────────────────────────────────────
@@ -369,6 +393,21 @@
 				{/if}
 			</div>
 
+			<!-- Striscia mosse (solo mobile) -->
+			<div class="mobile-moves-strip" bind:this={stripEl}>
+				{#each botHistory as entry, i}
+					{@const isActive = (viewIndex ?? botHistory.length - 1) === i}
+					<button
+						class="move-chip"
+						class:active={isActive}
+						class:start-chip={i === 0}
+						onclick={() => navTo(i)}
+					>
+						{#if i === 0}◆{:else if i % 2 === 1}{Math.ceil(i / 2)}.{entry.san}{:else}{entry.san}{/if}
+					</button>
+				{/each}
+			</div>
+
 			<!-- Board -->
 			<div class="board-container">
 				{#if result !== null}
@@ -387,6 +426,22 @@
 					lastMove={displayLastMove}
 					onMove={handlePlayerMove}
 				/>
+			</div>
+
+			<!-- Nav bar timeline (solo mobile) -->
+			<div class="mobile-nav-bar">
+				<button class="nav-btn" onclick={navFirst} disabled={atStart} title="Prima mossa">⏮</button>
+				<button class="nav-btn" onclick={navPrev}  disabled={atStart} title="Mossa precedente">◀</button>
+				<div class="nav-timeline">
+					<div class="timeline-track">
+						<div class="timeline-fill" style="width:{timelinePercent}%">
+							<span class="timeline-thumb"></span>
+						</div>
+					</div>
+					<span class="timeline-label" class:live={!isReviewing}>{navLabel}</span>
+				</div>
+				<button class="nav-btn" onclick={navNext}  disabled={atEnd} title="Mossa successiva">▶</button>
+				<button class="nav-btn" onclick={navLast}  disabled={atEnd} title="Ultima mossa">⏭</button>
 			</div>
 
 			<!-- Player row (bottom) -->
@@ -862,6 +917,10 @@
 }
 .theme-btn:hover { border-color: var(--accent); color: var(--text); }
 
+/* ── Mobile moves strip & nav bar (nascosti su desktop) ── */
+.mobile-moves-strip { display: none; }
+.mobile-nav-bar     { display: none; }
+
 /* ── Move navigation ── */
 .nav-row {
 	display: flex;
@@ -1053,5 +1112,113 @@
 		max-height: 200px;
 		overflow-y: auto;
 	}
+
+	/* ── Striscia mosse mobile ── */
+	.mobile-moves-strip {
+		display: flex;
+		overflow-x: auto;
+		overflow-y: hidden;
+		gap: 0.2rem;
+		padding: 0.3rem 0.4rem;
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		scrollbar-width: none;
+		width: min(calc(100vw - 1rem), calc(100vh - 220px));
+		-webkit-overflow-scrolling: touch;
+		flex-shrink: 0;
+	}
+	.mobile-moves-strip::-webkit-scrollbar { display: none; }
+
+	.move-chip {
+		flex-shrink: 0;
+		background: none;
+		border: 1px solid transparent;
+		border-radius: 4px;
+		color: var(--text-muted);
+		font-size: 0.65rem;
+		font-family: monospace;
+		padding: 0.18rem 0.32rem;
+		cursor: pointer;
+		white-space: nowrap;
+		line-height: 1.4;
+		transition: background 0.1s, color 0.1s, border-color 0.1s;
+	}
+	.move-chip:hover:not(.active) {
+		background: rgba(255,255,255,0.06);
+		color: var(--text);
+	}
+	.move-chip.active {
+		background: var(--accent);
+		border-color: var(--accent);
+		color: #000;
+		font-weight: 700;
+	}
+	.move-chip.start-chip {
+		color: var(--accent);
+		font-size: 0.55rem;
+	}
+
+	/* ── Nav bar mobile ── */
+	.mobile-nav-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		width: min(calc(100vw - 1rem), calc(100vh - 220px));
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.4rem 0.5rem;
+		flex-shrink: 0;
+	}
+	.mobile-nav-bar .nav-btn {
+		font-size: 0.75rem;
+		padding: 0.3rem 0.4rem;
+	}
+
+	.nav-timeline {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+		min-width: 0;
+	}
+	.timeline-track {
+		position: relative;
+		height: 5px;
+		background: var(--border);
+		border-radius: 3px;
+	}
+	.timeline-fill {
+		position: relative;
+		height: 100%;
+		background: var(--accent);
+		border-radius: 3px;
+		transition: width 0.15s ease;
+		min-width: 6px;
+	}
+	.timeline-thumb {
+		position: absolute;
+		right: 0;
+		top: 50%;
+		transform: translate(50%, -50%);
+		width: 11px;
+		height: 11px;
+		background: var(--accent);
+		border-radius: 50%;
+		border: 2px solid var(--bg-card);
+		box-shadow: 0 0 0 1px var(--accent);
+	}
+	.timeline-label {
+		text-align: center;
+		font-size: 0.62rem;
+		font-weight: 600;
+		color: var(--text-muted);
+		letter-spacing: 0.03em;
+	}
+	.timeline-label.live { color: #e05050; }
+
+	/* Nascondi nav-row nel side-col su mobile */
+	.side-col .nav-row { display: none; }
 }
 </style>
