@@ -7,6 +7,8 @@
 	import { user, authLoading } from '$lib/stores/auth';
 	import { initSounds, playSound } from '$lib/chess/sounds';
 	import { computeCaptured } from '$lib/chess/captured';
+	import { t } from '$lib/i18n';
+	import { browser } from '$app/environment';
 
 	// ── Auth guard ────────────────────────────────────────────────────────────
 	$effect(() => {
@@ -263,6 +265,10 @@
 		isThinking = false;
 	}
 
+	function saveBotPgn() {
+		if (browser) sessionStorage.setItem('botGamePgn', chessGame.pgn());
+	}
+
 	function checkGameOver(): boolean {
 		if (!chessGame.isGameOver()) return false;
 
@@ -282,12 +288,14 @@
 		} else {
 			result = 'Patta';
 		}
+		saveBotPgn();
 		return true;
 	}
 
 	function resign() {
 		result = 'Hai abbandonato';
 		isThinking = false;
+		saveBotPgn();
 	}
 
 	function backToSetup() {
@@ -423,9 +431,10 @@
 				{#if result !== null && !isReviewing}
 					<div class="overlay finished">
 						<p class="result-text">{result}</p>
-						<button class="btn btn-primary" style="width:auto;margin-top:1rem" onclick={backToSetup}>
-							Nuova partita
-						</button>
+						<div class="overlay-btns">
+							<button class="btn btn-primary" onclick={backToSetup}>{$t.bot.new_game}</button>
+							<a href="/analysis/bot?autoReview=1" class="btn btn-google">{$t.game.review}</a>
+						</div>
 					</div>
 				{/if}
 
@@ -837,6 +846,16 @@
 	text-align: center;
 	padding: 0 1rem;
 }
+
+.overlay-btns {
+	display: flex;
+	flex-direction: column;
+	gap: 0.6rem;
+	margin-top: 1.2rem;
+	min-width: 180px;
+}
+.overlay-btns .btn,
+.overlay-btns button { text-align: center; width: 100%; }
 
 /* ── Side column ── */
 .side-col {

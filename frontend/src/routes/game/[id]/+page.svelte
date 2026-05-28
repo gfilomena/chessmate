@@ -9,6 +9,7 @@
 	import { user } from '$lib/stores/auth';
 	import { initSounds, playSound, type SoundName } from '$lib/chess/sounds';
 	import { computeCaptured } from '$lib/chess/captured';
+	import { t } from '$lib/i18n';
 
 	const gameId = $page.params.id!;
 
@@ -238,7 +239,10 @@
 			{#if $gameState.status === 'finished' && !isReviewing}
 				<div class="overlay finished">
 					<p class="result-text">{resultText($gameState.result, $gameState.finishReason)}</p>
-					<a href="/" class="btn btn-primary" style="width:auto;margin-top:1rem">Nuova partita</a>
+					<div class="overlay-btns">
+						<a href="/" class="btn btn-primary">{$t.game.new_game}</a>
+						<a href="/analysis/{gameId}?autoReview=1" class="btn btn-google">{$t.game.review}</a>
+					</div>
 				</div>
 			{/if}
 
@@ -451,6 +455,16 @@
 		font-weight: 700;
 		color: var(--accent);
 	}
+
+	.overlay-btns {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		margin-top: 1.2rem;
+		width: auto;
+		min-width: 180px;
+	}
+	.overlay-btns .btn { text-align: center; }
 
 	/* ── Panel toggle (default: nascosto, visibile solo mobile) ── */
 	.panel-toggle {

@@ -6,8 +6,11 @@
 	import { StockfishEngine, evalToPercent, formatScore, classifyMove, type AnalysisResult, type MoveClassification } from '$lib/chess/stockfish';
 	import { API_URL as API } from '$lib/config';
 	import { t } from '$lib/i18n';
+	import { browser } from '$app/environment';
 
-	const gameId = $page.params.id;
+	const gameId    = $page.params.id;
+	const isBotGame = gameId === 'bot';
+	const autoReview = $page.url.searchParams.get('autoReview') === '1';
 
 	// ── Stato base ─────────────────────────────────────────────────────────
 	let game      = $state<any>(null);
@@ -32,11 +35,18 @@
 	// ── Mount ──────────────────────────────────────────────────────────────
 	onMount(async () => {
 		try {
-			const res  = await fetch(`${API}/api/games/${gameId}`);
-			const json = await res.json();
-			if (!json.success) throw new Error('Partita non trovata');
-			game = json.data;
-			parsePositions(game.pgn);
+			if (isBotGame) {
+				// Partita vs bot: PGN salvato in sessionStorage
+				const pgn = browser ? sessionStorage.getItem('botGamePgn') ?? '' : '';
+				game = { white_username: 'Tu', black_username: 'Bot', white_elo: '', black_elo: '', result: null, pgn };
+				parsePositions(pgn);
+			} else {
+				const res  = await fetch(`${API}/api/games/${gameId}`);
+				const json = await res.json();
+				if (!json.success) throw new Error('Partita non trovata');
+				game = json.data;
+				parsePositions(game.pgn);
+			}
 			engine = new StockfishEngine();
 			await engine.init();
 		} catch (e: any) {
@@ -44,7 +54,13 @@
 		} finally {
 			loading = false;
 		}
-		await analyzeCurrentPosition();
+
+		if (autoReview) {
+			// Avvia revisione automaticamente se arrivato dall'overlay fine partita
+			await startReview();
+		} else {
+			await analyzeCurrentPosition();
+		}
 	});
 
 	onDestroy(() => engine?.destroy());
