@@ -475,23 +475,23 @@
 	/* ── Move classification badge ──────────────────────────────── */
 	.sq-badge {
 		position: absolute;
-		top: 5%;
-		right: 5%;
-		width: 28%;
-		height: 28%;
+		top: 4%;
+		right: 4%;
+		width: 36%;
+		height: 36%;
 		border-radius: 50%;
 		background: var(--badge-bg, #888);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: clamp(7px, 1.8vw, 11px);
+		font-size: clamp(9px, 2.4vw, 14px);
 		font-weight: 900;
 		color: #fff;
 		z-index: 6;
 		pointer-events: none;
 		line-height: 1;
-		box-shadow: 0 2px 5px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.35);
-		letter-spacing: -0.04em;
+		box-shadow: 0 2px 6px rgba(0,0,0,0.65), 0 0 0 2px rgba(255,255,255,0.4);
+		letter-spacing: -0.05em;
 	}
 
 	/* ── Arrow overlay ──────────────────────────────────────────── */

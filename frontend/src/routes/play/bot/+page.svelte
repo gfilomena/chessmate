@@ -787,15 +787,15 @@
 	margin-top: 0.12rem;
 }
 .cap-piece {
-	font-size: 0.82rem;
+	font-size: 1.25rem;
 	line-height: 1;
-	opacity: 0.8;
+	opacity: 0.85;
 }
 .cap-adv {
-	font-size: 0.68rem;
+	font-size: 0.85rem;
 	font-weight: 700;
 	color: var(--accent);
-	margin-left: 0.2rem;
+	margin-left: 0.3rem;
 }
 
 .thinking-badge {
