@@ -406,29 +406,24 @@
 			</div>
 		{/if}
 
-		<!-- Sezione revisione -->
-		<div class="review-section">
+		<!-- Barra azioni unificata -->
+		<div class="action-bar">
 			{#if reviewRunning}
-				<div class="review-progress">
+				<div class="review-progress" style="flex:1">
 					<div class="progress-bar">
 						<div class="progress-fill" style="width:{progressPct}%"></div>
 					</div>
 					<span class="progress-label">{$t.analysis.progress(reviewProgress, reviewTotal)}</span>
 				</div>
 			{:else if reviewDone}
-				<button class="btn btn-google" style="width:100%" onclick={exitReview}>
-					{$t.analysis.back_live}
-				</button>
+				<button class="action-pill accent" onclick={exitReview}>← Live</button>
+				<a href={`${API}/api/games/${gameId}/pgn`} class="action-pill">⬇ PGN</a>
+				<a href="/" class="action-pill">Nuova ↗</a>
 			{:else}
-				<button class="btn btn-primary" style="width:100%" onclick={startReview}>
-					{$t.analysis.start_review}
-				</button>
+				<button class="action-pill accent full" onclick={startReview}>{$t.analysis.start_review}</button>
+				<a href={`${API}/api/games/${gameId}/pgn`} class="action-pill">⬇ PGN</a>
+				<a href="/" class="action-pill">Nuova ↗</a>
 			{/if}
-		</div>
-
-		<div class="actions">
-			<a href={`${API}/api/games/${gameId}/pgn`} class="btn btn-google">{$t.analysis.download_pgn}</a>
-			<a href="/" class="btn btn-primary">{$t.analysis.new_game}</a>
 		</div>
 	</div>
 
@@ -445,7 +440,7 @@
 	.analysis-layout {
 		display: flex;
 		gap: 1rem;
-		padding: 1rem 1.5rem;
+		padding: 0.4rem 1.5rem;
 		align-items: flex-start;
 		justify-content: center;
 		height: 100dvh;
@@ -453,17 +448,17 @@
 	}
 
 	/* Ridimensiona la scacchiera per la pagina analisi:
-	   overhead verticale = padding(2rem≈32px) + game-info(22px) + nav(44px) + gaps(2×12px≈24px) ≈ 122px → 130px
+	   overhead verticale = padding(0.8rem≈13px) + game-info(22px) + nav(44px) + gaps(2×6px≈12px) ≈ 91px → 95px
 	   overhead orizzontale = eval-bar(36px) + col-gap(16px) + moves-col(210px) + padding(48px) ≈ 310px → 320px */
 	:global(.analysis-layout .board-wrap) {
-		width: min(720px, calc(100dvh - 130px), calc(100vw - 320px));
+		width: min(720px, calc(100dvh - 95px), calc(100vw - 320px));
 	}
 
 	/* ── Board column ── */
 	.board-col {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.4rem;
 		flex-shrink: 0;
 	}
 
@@ -596,10 +591,9 @@
 		flex-shrink: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
-		padding-top: 3.5rem;
-		/* Limita l'altezza al viewport meno il padding layout */
-		max-height: calc(100dvh - 2rem);
+		gap: 0.6rem;
+		padding-top: 2.2rem; /* allineato sotto game-info */
+		max-height: calc(100dvh - 0.8rem);
 		overflow: hidden;
 	}
 	.moves-col h3 {
@@ -691,10 +685,6 @@
 		gap: 0.4rem;
 		flex-shrink: 0;
 	}
-	.review-section .btn {
-		font-size: 0.75rem !important;
-		padding: 0.35rem 0.5rem !important;
-	}
 	.review-progress { display: flex; flex-direction: column; gap: 0.4rem; }
 	.progress-bar {
 		width: 100%;
@@ -715,20 +705,46 @@
 		text-align: center;
 	}
 
-	.actions {
+	/* ── Action bar — ghost pills in riga ── */
+	.action-bar {
 		display: flex;
-		flex-direction: row;
-		gap: 0.35rem;
+		gap: 0.3rem;
 		flex-shrink: 0;
+		align-items: center;
 	}
-	.actions a {
+	.action-pill {
 		flex: 1;
-		font-size: 0.75rem !important;
-		padding: 0.35rem 0.4rem !important;
+		font-size: 0.72rem;
+		font-weight: 500;
+		padding: 0.32rem 0.25rem;
 		text-align: center;
+		background: none;
+		border: 1px solid var(--border);
+		border-radius: 20px;
+		color: var(--text-muted);
+		text-decoration: none;
+		cursor: pointer;
 		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
+		transition: border-color 0.12s, color 0.12s;
+		line-height: 1.3;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.action-pill:hover {
+		border-color: var(--accent);
+		color: var(--text);
+		text-decoration: none;
+	}
+	.action-pill.accent {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+	.action-pill.accent:hover {
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
+	}
+	.action-pill.full {
+		flex: 2;
 	}
 
 	/* ── Mobile ── */
@@ -741,7 +757,6 @@
 			overflow: visible;
 		}
 		:global(.analysis-layout .board-wrap) {
-			/* Su mobile usa il sizing naturale della scacchiera */
 			width: min(calc(100vw - 1.5rem), calc(100dvh - 300px));
 		}
 		.eval-bar  { display: none; }
@@ -758,5 +773,6 @@
 			max-height: 200px;
 			overflow-y: auto;
 		}
+		.action-pill { font-size: 0.68rem; padding: 0.28rem 0.2rem; }
 	}
 </style>
