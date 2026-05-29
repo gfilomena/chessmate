@@ -119,6 +119,18 @@
 				<span class="sidebar-logo-text">Chess</span>
 			</a>
 
+			<!-- User row — sopra la navigazione -->
+			<div class="user-row">
+				<a href="/profile/{$user!.id}" class="user-avatar-link" onclick={() => sidebarOpen = false}>
+					<div class="user-avatar">{initial}</div>
+				</a>
+				<a href="/profile/{$user!.id}" class="user-info" onclick={() => sidebarOpen = false}>
+					<div class="user-name">{$user!.username}</div>
+					<div class="user-elo">{$user!.elo_rapid} ELO</div>
+				</a>
+				<button class="logout-btn" onclick={handleLogout} title={$t.user.logout}>⏏</button>
+			</div>
+
 			<nav class="sidebar-nav">
 				<a href="/play" class="nav-item" class:active={isActive('/play')} onclick={() => sidebarOpen = false}>
 					<span class="nav-icon">🎮</span>
@@ -129,19 +141,6 @@
 					<span>{$t.nav.leaderboard}</span>
 				</a>
 			</nav>
-
-			<div class="sidebar-bottom">
-				<div class="user-row">
-					<a href="/profile/{$user!.id}" class="user-avatar-link" onclick={() => sidebarOpen = false}>
-						<div class="user-avatar">{initial}</div>
-					</a>
-					<a href="/profile/{$user!.id}" class="user-info" onclick={() => sidebarOpen = false}>
-						<div class="user-name">{$user!.username}</div>
-						<div class="user-elo">{$user!.elo_rapid} ELO</div>
-					</a>
-					<button class="logout-btn" onclick={handleLogout} title={$t.user.logout}>⏏</button>
-				</div>
-			</div>
 		</aside>
 	{/if}
 
