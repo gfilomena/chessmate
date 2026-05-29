@@ -140,6 +140,13 @@
 					<span class="nav-icon">🏆</span>
 					<span>{$t.nav.leaderboard}</span>
 				</a>
+				{#if $user?.is_admin}
+					<div class="nav-divider"></div>
+					<a href="/admin" class="nav-item nav-item-admin" class:active={isActive('/admin')} onclick={() => sidebarOpen = false}>
+						<span class="nav-icon">⚙️</span>
+						<span>Admin</span>
+					</a>
+				{/if}
 			</nav>
 		</aside>
 	{/if}
@@ -239,6 +246,18 @@
 	.lang-btn.active {
 		opacity: 1;
 		border-color: var(--accent);
+	}
+
+	/* ── Admin nav item ── */
+	:global(.nav-item-admin) {
+		color: #c8a84b;
+	}
+	:global(.nav-item-admin:hover) {
+		color: #e0c070;
+	}
+	:global(.nav-item-admin.active) {
+		background: rgba(200, 168, 75, 0.12);
+		color: #c8a84b;
 	}
 
 	/* ── Mobile hamburger placeholder (centra il logo) ── */
