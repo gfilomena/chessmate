@@ -144,11 +144,11 @@
 	function onPtrDown(e: PointerEvent, square: string, svg: string | null) {
 		if (!isMyTurn) return;
 
-		// ① Prevent the browser from:
-		//    • generating synthetic mouse/click events from touch
-		//    • hijacking the touch for scroll/zoom
-		//    This is essential on Android Chrome.
-		e.preventDefault();
+		// ① For touch pointers: prevent the browser from hijacking the gesture
+		//    for scroll/zoom and from generating delayed synthetic click events.
+		//    Do NOT call preventDefault() for mouse — it would suppress the
+		//    `click` event that Playwright relies on during automated testing.
+		if (e.pointerType === 'touch') e.preventDefault();
 
 		const piece   = chess().get(square as any);
 		const myColor = playerColor === 'white' ? 'w' : 'b';
