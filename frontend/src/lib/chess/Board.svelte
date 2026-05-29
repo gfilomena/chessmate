@@ -379,16 +379,17 @@
 	/* ── Board wrapper ──────────────────────────────────────────── */
 	.board-wrap {
 		position: relative;
-		width: min(560px, calc(100dvh - 130px), calc(100vw - 480px));
+		/* 720px max per sfruttare schermi più alti; 90px di overhead:
+		   2 × player-row(~34px) + 2 × gap(~5px) + 2 × padding(~6px) */
+		width: min(720px, calc(100dvh - 90px), calc(100vw - 480px));
 		aspect-ratio: 1 / 1;
 	}
 
 	@media (max-width: 768px) {
 		.board-wrap {
-			/* Su mobile: riempi la larghezza viewport (meno margine laterale).
-			   calc(100dvh - 220px) lascia spazio per header(52) + righe player(88)
-			   + pulsante panel(48) + gap/padding(~32). */
-			width: min(calc(100vw - 1rem), calc(100dvh - 220px));
+			/* Mobile: header(52) + 2×player-row(~32px) + moves-strip(~30px)
+			   + nav-bar(~34px) + panel-toggle(~36px) + gaps/padding(~30px) ≈ 185px */
+			width: min(calc(100vw - 1rem), calc(100dvh - 185px));
 		}
 	}
 

@@ -38,17 +38,18 @@
 
 <style>
 	.timer {
-		font-size: 2rem;
+		font-size: clamp(1rem, 2.2dvh, 1.4rem);
 		font-weight: 700;
 		font-variant-numeric: tabular-nums;
-		padding: 0.5rem 1.2rem;
-		border-radius: 8px;
+		padding: 0.2rem 0.65rem;
+		border-radius: 6px;
 		background: var(--bg-card);
 		border: 2px solid var(--border);
 		color: var(--text-muted);
-		min-width: 110px;
+		min-width: 72px;
 		text-align: center;
 		transition: border-color 0.3s, color 0.3s;
+		line-height: 1.4;
 	}
 	.timer.active {
 		border-color: var(--accent);

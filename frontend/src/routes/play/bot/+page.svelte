@@ -797,7 +797,7 @@
 .game-layout {
 	display: flex;
 	gap: clamp(0.75rem, 1.5vw, 2rem);
-	padding: clamp(0.4rem, 0.8dvh, 1rem) clamp(0.75rem, 1.5vw, 2rem);
+	padding: clamp(0.25rem, 0.4dvh, 0.5rem) clamp(0.75rem, 1.5vw, 2rem);
 	height: 100dvh;
 	overflow: hidden;
 	align-items: center;
@@ -807,7 +807,7 @@
 .board-col {
 	display: flex;
 	flex-direction: column;
-	gap: 0.75rem;
+	gap: clamp(0.2rem, 0.4dvh, 0.35rem);
 }
 
 .player-row {
@@ -1053,8 +1053,8 @@
 	/* ── Game layout mobile ── */
 	.game-layout {
 		flex-direction: column;
-		padding: 0.5rem 0.5rem 1rem;
-		gap: 0.4rem;
+		padding: 0.4rem 0.5rem 0.75rem;
+		gap: 0.3rem;
 		align-items: center;
 		min-height: 0;
 	}
@@ -1063,7 +1063,7 @@
 		align-items: center;
 	}
 	.player-row {
-		width: min(calc(100vw - 1rem), calc(100vh - 220px));
+		width: min(calc(100vw - 1rem), calc(100dvh - 185px));
 	}
 
 	/* Pulsante toggle pannello */
@@ -1072,7 +1072,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.4rem;
-		width: min(calc(100vw - 1rem), calc(100vh - 220px));
+		width: min(calc(100vw - 1rem), calc(100dvh - 185px));
 		padding: 0.55rem 1rem;
 		background: var(--bg-card);
 		border: 1px solid var(--border);
@@ -1181,7 +1181,7 @@
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		scrollbar-width: none;
-		width: min(calc(100vw - 1rem), calc(100vh - 220px));
+		width: min(calc(100vw - 1rem), calc(100dvh - 185px));
 		-webkit-overflow-scrolling: touch;
 		flex-shrink: 0;
 	}
@@ -1221,7 +1221,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.3rem;
-		width: min(calc(100vw - 1rem), calc(100vh - 220px));
+		width: min(calc(100vw - 1rem), calc(100dvh - 185px));
 		background: var(--bg-card);
 		border: 1px solid var(--border);
 		border-radius: 8px;
