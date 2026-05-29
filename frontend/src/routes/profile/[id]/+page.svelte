@@ -339,4 +339,43 @@
 	.elo-delta { font-weight: 600; }
 	.elo-delta.positive { color: var(--accent); }
 	.elo-delta.negative { color: var(--danger); }
+
+	/* Responsive */
+	@media (max-width: 600px) {
+		.profile-layout {
+			padding: 1rem;
+			gap: 1rem;
+		}
+
+		.profile-info h1 { font-size: 1.3rem; }
+
+		.elo-cards {
+			gap: 0.5rem;
+		}
+		.elo-card {
+			padding: 0.75rem 0.5rem;
+		}
+		.elo-value { font-size: 1.4rem; }
+		.elo-value.dimmed { font-size: 1.1rem; }
+
+		.stats-bar {
+			gap: 0;
+			justify-content: space-between;
+			padding: 0.75rem 1rem;
+			flex-wrap: wrap;
+		}
+		.stat-block {
+			min-width: 0;
+			flex: 1 1 auto;
+		}
+		.stat-num { font-size: 1.2rem; }
+
+		.games-section {
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+		.games-table {
+			min-width: 480px;
+		}
+	}
 </style>
