@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 90">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80">
 
-  <!-- ── Icona alfiere (cerchio scuro + pezzo) ────────────────── -->
-  <circle cx="45" cy="45" r="42" fill="#262421"/>
-  <circle cx="45" cy="45" r="42" fill="none" stroke="#81B64C" stroke-width="2.5"/>
+  <!-- ── Icona: cerchio scuro + bordo verde ───────────────── -->
+  <circle cx="40" cy="40" r="37" fill="#262421"/>
+  <circle cx="40" cy="40" r="37" fill="none" stroke="#81B64C" stroke-width="2.5"/>
 
-  <!-- Alfiere scalato per centrare nel cerchio (45×45 → ~1.5×, centrato su 45,45) -->
-  <g transform="translate(10,5) scale(1.55)" fill="#81B64C" stroke="none">
+  <!-- Alfiere centrato nel cerchio -->
+  <g transform="translate(6,3) scale(1.52)" fill="#81B64C" stroke="none">
     <path d="M9,36 C12.39,35.03 19.11,36.43 22.5,34
              C25.89,36.43 32.61,35.03 36,36
              C36,36 37.65,36.54 39,38
@@ -23,8 +23,8 @@
              C15,30 14.5,30.5 15,32z"/>
     <circle cx="22.5" cy="8" r="2.75"/>
   </g>
-  <g transform="translate(10,5) scale(1.55)"
-     stroke="rgba(129,182,76,0.55)" stroke-width="1.2"
+  <g transform="translate(6,3) scale(1.52)"
+     stroke="rgba(129,182,76,0.5)" stroke-width="1.2"
      fill="none" stroke-linecap="round">
     <line x1="17.5" y1="26" x2="27.5" y2="26"/>
     <line x1="15"   y1="30" x2="30"   y2="30"/>
@@ -32,20 +32,13 @@
     <line x1="19.8" y1="18"   x2="25.2" y2="18"/>
   </g>
 
-  <!-- ── Testo ─────────────────────────────────────────────────── -->
-  <text x="100" y="38"
+  <!-- ── Testo principale ──────────────────────────────────── -->
+  <text x="90" y="51"
     font-family="'Inter', 'Segoe UI', system-ui, sans-serif"
-    font-size="30" font-weight="800" letter-spacing="-0.5"
+    font-size="38" font-weight="800" letter-spacing="-1.5"
     fill="#E2E0D5">Chess</text>
 
-  <text x="100" y="38"
-    font-family="'Inter', 'Segoe UI', system-ui, sans-serif"
-    font-size="30" font-weight="800" letter-spacing="-0.5"
-    fill="#81B64C" dx="74">Clone</text>
-
-  <text x="101" y="62"
-    font-family="'Inter', 'Segoe UI', system-ui, sans-serif"
-    font-size="13" font-weight="400" letter-spacing="0.5"
-    fill="#6E6D6A">Gioca agli scacchi online</text>
+  <!-- Puntino verde decorativo dopo il testo -->
+  <circle cx="219" cy="36" r="4" fill="#81B64C"/>
 
 </svg>
