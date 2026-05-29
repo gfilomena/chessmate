@@ -85,14 +85,14 @@
 	let dragY        = $state(0);
 	let squareSize   = $state(60);
 
-	// Non-reactive internal tracking (don't need Svelte reactivity)
+	// Non-reactive internal tracking
 	let boardEl: HTMLElement | undefined;
-	let suppressNextClick = false;
 	let ptrDownSquare: string | null = null;
 	let ptrStartX = 0;
 	let ptrStartY = 0;
 
-	const DRAG_THRESHOLD = 4; // px before entering drag mode
+	// Higher threshold on touch devices to avoid accidental drags on taps
+	const DRAG_THRESHOLD = 8; // px before entering drag mode
 
 	// ── Chess engine ───────────────────────────────────────────────
 	const chess = $derived(() => {
@@ -119,10 +119,10 @@
 	function isLegal(s: string)  { return legalTargets.includes(s); }
 	function isLast(s: string)   { return lastMove?.from === s || lastMove?.to === s; }
 
-	// ── Click-to-move ──────────────────────────────────────────────
-	function handleClick(square: string) {
-		// Suppress the synthetic click that follows a drag-and-drop
-		if (suppressNextClick) { suppressNextClick = false; return; }
+	// ── Tap (click-to-move) ───────────────────────────────────────
+	// Called from onPtrUp on pure taps — works for both mouse and touch.
+	// No synthetic `click` event is used, avoiding Android timing issues.
+	function handleTap(square: string) {
 		if (!isMyTurn) return;
 
 		if (selectedSquare === null) {
@@ -140,37 +140,44 @@
 		}
 	}
 
-	// ── Drag-to-move ───────────────────────────────────────────────
+	// ── Unified pointer handler (drag + tap, desktop + Android) ───
 	function onPtrDown(e: PointerEvent, square: string, svg: string | null) {
-		if (!isMyTurn || !svg) return;
-		const piece = chess().get(square as any);
-		const myColor = playerColor === 'white' ? 'w' : 'b';
-		if (!piece || piece.color !== myColor) return;
+		if (!isMyTurn) return;
 
-		// Record start info (no preventDefault — lets onClick fire on pure tap)
+		// ① Prevent the browser from:
+		//    • generating synthetic mouse/click events from touch
+		//    • hijacking the touch for scroll/zoom
+		//    This is essential on Android Chrome.
+		e.preventDefault();
+
+		const piece   = chess().get(square as any);
+		const myColor = playerColor === 'white' ? 'w' : 'b';
+		const isOwn   = !!(piece && piece.color === myColor);
+
+		// Record tap origin
 		ptrDownSquare = square;
 		ptrStartX     = e.clientX;
 		ptrStartY     = e.clientY;
 		dragX         = e.clientX;
 		dragY         = e.clientY;
-		dragSvg       = svg;
 
-		// Snapshot square size from actual board element
-		if (boardEl) squareSize = boardEl.getBoundingClientRect().width / 8;
+		// Prepare ghost only for own pieces (drag candidates)
+		if (isOwn && svg) {
+			dragSvg = svg;
+			if (boardEl) squareSize = boardEl.getBoundingClientRect().width / 8;
+		}
 
-		// Attach document-level listeners for the duration of this pointer gesture
 		function onPtrMove(me: PointerEvent) {
 			dragX = me.clientX;
 			dragY = me.clientY;
 
-			if (!isDragActive) {
+			// Only enter drag mode if there's an own piece to drag
+			if (!isDragActive && dragSvg) {
 				const dx = me.clientX - ptrStartX;
 				const dy = me.clientY - ptrStartY;
 				if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
-					// Threshold crossed → enter drag mode
 					isDragActive   = true;
 					dragFrom       = ptrDownSquare;
-					// Always re-select from the drag origin so legal targets are fresh
 					selectedSquare = ptrDownSquare;
 					legalTargets   = chess()
 						.moves({ square: ptrDownSquare as any, verbose: true })
@@ -182,15 +189,12 @@
 		function onPtrUp(ue: PointerEvent) {
 			document.removeEventListener('pointermove', onPtrMove);
 			document.removeEventListener('pointerup',   onPtrUp);
+			document.removeEventListener('pointercancel', onPtrCancel);
 
 			if (isDragActive) {
-				// Suppress the synthetic click that fires after pointerup
-				suppressNextClick = true;
-
 				const from    = dragFrom!;
 				const targets = [...legalTargets];
 
-				// Reset all drag state
 				isDragActive   = false;
 				dragFrom       = null;
 				dragSvg        = null;
@@ -199,23 +203,39 @@
 				ptrDownSquare  = null;
 				document.body.style.cursor = '';
 
-				// Find the square under the pointer.
-				// elementsFromPoint returns ALL elements top-to-bottom,
-				// so the ghost (pointer-events:none) won't block us.
+				// elementsFromPoint ignores the ghost (pointer-events:none)
+				// and finds the actual board square under the finger/cursor.
 				const els = document.elementsFromPoint(ue.clientX, ue.clientY);
 				const btn = els.find(el => el.hasAttribute('data-sq')) as HTMLElement | null;
 				const to  = btn?.dataset.sq ?? null;
 
 				if (to && targets.includes(to)) tryMove(from, to);
 			} else {
-				// Pure tap — clean up staging vars, let onclick handle it
+				// Pure tap: no drag occurred → treat as click-to-move
+				const tapSq = ptrDownSquare;
 				dragSvg       = null;
 				ptrDownSquare = null;
+				if (tapSq) handleTap(tapSq);
 			}
 		}
 
-		document.addEventListener('pointermove', onPtrMove);
-		document.addEventListener('pointerup',   onPtrUp);
+		// Cancel (e.g. Android system gesture intercepted the touch)
+		function onPtrCancel() {
+			document.removeEventListener('pointermove', onPtrMove);
+			document.removeEventListener('pointerup',   onPtrUp);
+			document.removeEventListener('pointercancel', onPtrCancel);
+			isDragActive   = false;
+			dragFrom       = null;
+			dragSvg        = null;
+			selectedSquare = null;
+			legalTargets   = [];
+			ptrDownSquare  = null;
+			document.body.style.cursor = '';
+		}
+
+		document.addEventListener('pointermove',  onPtrMove);
+		document.addEventListener('pointerup',    onPtrUp);
+		document.addEventListener('pointercancel', onPtrCancel);
 	}
 
 	// Update cursor globally while dragging
@@ -286,7 +306,6 @@
 					class:selected={isSel(square)}
 					class:last-move={isLast(square)}
 					onpointerdown={(e) => onPtrDown(e, square, svg)}
-					onclick={() => handleClick(square)}
 					aria-label={square}
 				>
 					<!-- Inside-board coordinate labels (chess.com style) -->
@@ -398,6 +417,11 @@
 		border: none;
 		cursor: grab;
 		padding: 0;
+		/* Critical for Android: prevents browser from stealing touch
+		   events for scrolling/zooming while interacting with the board */
+		touch-action: none;
+		-webkit-tap-highlight-color: transparent;
+		-webkit-touch-callout: none;
 	}
 	.square:active { cursor: grabbing; }
 
