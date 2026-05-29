@@ -62,7 +62,6 @@
 						🟢 {$t.home.resume_game}
 					</a>
 				{/if}
-				<a href="/play/bot" class="btn-outline">{$t.home.vs_bot}</a>
 			</div>
 
 		{:else}

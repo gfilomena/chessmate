@@ -449,9 +449,18 @@
 	.analysis-layout {
 		display: flex;
 		gap: 1rem;
-		padding: 1.5rem;
+		padding: 1rem 1.5rem;
 		align-items: flex-start;
 		justify-content: center;
+		height: 100dvh;
+		overflow: hidden;
+	}
+
+	/* Ridimensiona la scacchiera per la pagina analisi:
+	   overhead verticale = padding(2rem) + game-info(22px) + nav(44px) + engine-badge(44px) + gaps(36px) ≈ 185px
+	   overhead orizzontale = eval-bar(36px) + col-gap(16px) + moves-col(210px) + padding(48px) ≈ 330px */
+	:global(.analysis-layout .board-wrap) {
+		width: min(680px, calc(100dvh - 185px), calc(100vw - 330px));
 	}
 
 	/* ── Board column ── */
@@ -459,6 +468,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+		flex-shrink: 0;
 	}
 
 	/* Riga che contiene eval-bar + scacchiera, allineati in altezza */
@@ -587,24 +597,31 @@
 	/* ── Moves column ── */
 	.moves-col {
 		width: 210px;
+		flex-shrink: 0;
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
 		padding-top: 3.5rem;
+		/* Limita l'altezza al viewport meno il padding layout */
+		max-height: calc(100dvh - 2rem);
+		overflow: hidden;
 	}
 	.moves-col h3 {
 		color: var(--text-muted);
 		font-size: 0.8rem;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
+		flex-shrink: 0;
 	}
 	.moves-list {
 		background: var(--bg-card);
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		padding: 0.5rem;
-		max-height: 360px;
+		flex: 1;
+		min-height: 0;
 		overflow-y: auto;
+		scrollbar-width: thin;
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
@@ -647,6 +664,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
+		flex-shrink: 0;
 	}
 	.summary-header,
 	.summary-row {
@@ -675,6 +693,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.4rem;
+		flex-shrink: 0;
 	}
 	.review-progress { display: flex; flex-direction: column; gap: 0.4rem; }
 	.progress-bar {
@@ -700,6 +719,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
+		flex-shrink: 0;
 	}
 
 	/* ── Mobile ── */
@@ -708,9 +728,26 @@
 			flex-direction: column;
 			padding: 0.75rem;
 			align-items: center;
+			height: auto;
+			overflow: visible;
 		}
-		.eval-bar   { display: none; }
-		.moves-col  { width: 100%; padding-top: 0; max-width: 480px; }
-		.moves-list { max-height: 200px; }
+		:global(.analysis-layout .board-wrap) {
+			/* Su mobile usa il sizing naturale della scacchiera */
+			width: min(calc(100vw - 1.5rem), calc(100dvh - 300px));
+		}
+		.eval-bar  { display: none; }
+		.moves-col {
+			width: 100%;
+			max-width: 480px;
+			padding-top: 0;
+			max-height: none;
+			overflow: visible;
+		}
+		.moves-list {
+			flex: none;
+			min-height: 0;
+			max-height: 200px;
+			overflow-y: auto;
+		}
 	}
 </style>
