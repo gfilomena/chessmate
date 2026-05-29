@@ -533,7 +533,7 @@
 		text-align: center;
 	}
 
-	/* ── Engine info (live) — in moves-col, right-aligned ── */
+	/* ── Engine info (live) — in moves-col, full width ── */
 	.engine-info {
 		display: flex;
 		gap: 0.5rem;
@@ -546,14 +546,13 @@
 		border-radius: 6px;
 		padding: 0.3rem 0.6rem;
 		flex-shrink: 0;
-		align-self: flex-end;
 	}
 	.analyzing   { color: var(--accent); }
 	.score-text  { font-weight: 700; }
 	.score-text.positive { color: #f0d9b5; }
 	.score-text.negative { color: #888; }
 
-	/* ── Badge mossa corrente (revisione) — in moves-col, right-aligned ── */
+	/* ── Badge mossa corrente (revisione) — in moves-col, full width ── */
 	.move-badge-bar {
 		display: flex;
 		align-items: center;
@@ -564,7 +563,6 @@
 		border-radius: 6px;
 		font-size: 0.75rem;
 		flex-shrink: 0;
-		align-self: flex-end;
 	}
 	.move-badge-bar.neutral {
 		color: var(--text-muted);
