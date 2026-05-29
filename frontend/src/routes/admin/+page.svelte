@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { user } from '$lib/stores/auth';
+	import { user, authLoading } from '$lib/stores/auth';
 	import { API_URL as API } from '$lib/config';
 
 	// ── Guard ──────────────────────────────────────────────────────────────────
-	// Aspetta che lo store si risolva (null = non loggato, undefined = loading)
+	// Aspetta che authLoading sia false prima di controllare i permessi
 	$effect(() => {
-		if ($user !== undefined && !$user?.is_admin) goto('/');
+		if (!$authLoading && !$user?.is_admin) goto('/');
 	});
 
 	// ── Tabs ───────────────────────────────────────────────────────────────────
