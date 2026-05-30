@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import logo from '$lib/assets/logo.svg';
 	import { user, authLoading } from '$lib/stores/auth';
-	import { t } from '$lib/i18n';
+	import { t, lang, setLang, LANGS } from '$lib/i18n';
 	import { API_URL as API } from '$lib/config';
 
 	let activeGameId = $state<string | null>(null);
@@ -93,6 +93,28 @@
 			<span>{$t.home.feat_mobile}</span>
 		</div>
 	</div>
+
+	<!-- ── Footer info (solo visitatori non loggati) ─────────────── -->
+	{#if !$authLoading && !$user}
+		<div class="home-footer">
+			<nav class="footer-links">
+				<a href="/about">{$t.nav.about}</a>
+				<span class="sep">·</span>
+				<a href="/privacy">{$t.nav.privacy}</a>
+			</nav>
+			<div class="footer-divider"></div>
+			<div class="lang-row">
+				{#each LANGS as l}
+					<button
+						class="lang-btn"
+						class:active={$lang === l.code}
+						onclick={() => setLang(l.code)}
+						title={l.label}
+					>{l.flag}</button>
+				{/each}
+			</div>
+		</div>
+	{/if}
 
 </div>
 
@@ -236,6 +258,56 @@
 		font-weight: 500;
 	}
 	.feat-icon { font-size: 1rem; line-height: 1; }
+
+	/* ── Home footer ── */
+	.home-footer {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.9rem;
+		margin-top: -1rem;
+	}
+	.footer-links {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+	.footer-links a {
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		text-decoration: none;
+		opacity: 0.65;
+		transition: opacity 0.15s;
+	}
+	.footer-links a:hover { opacity: 1; }
+	.sep {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		opacity: 0.35;
+	}
+	.footer-divider {
+		width: 1px;
+		height: 14px;
+		background: var(--border);
+		opacity: 0.5;
+	}
+	.lang-row {
+		display: flex;
+		gap: 0.2rem;
+	}
+	.lang-btn {
+		background: none;
+		border: 1.5px solid transparent;
+		border-radius: 5px;
+		padding: 0.1rem 0.25rem;
+		font-size: 1rem;
+		cursor: pointer;
+		opacity: 0.5;
+		transition: opacity 0.15s, border-color 0.15s;
+		line-height: 1;
+	}
+	.lang-btn:hover { opacity: 0.85; }
+	.lang-btn.active { opacity: 1; border-color: var(--accent); }
 
 	/* ── Mobile ── */
 	@media (max-width: 768px) {

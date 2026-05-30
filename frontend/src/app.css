@@ -199,8 +199,6 @@ a:hover { text-decoration: underline; }
 	flex: 1;
 	min-height: 100vh;
 	overflow-x: hidden;
-	/* spazio per la bottom bar fissa */
-	padding-bottom: 48px;
 }
 
 /* Nessuna sidebar (utente non loggato) → content a piena larghezza */

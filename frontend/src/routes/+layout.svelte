@@ -162,26 +162,6 @@
 
 </div>
 
-<!-- ── Bottom bar fissa — About · Privacy · Lingue ─────────── -->
-<footer class="bottom-bar">
-	<nav class="bottom-links">
-		<a href="/about" class="bottom-link">{$t.nav.about}</a>
-		<span class="bottom-sep">·</span>
-		<a href="/privacy" class="bottom-link">{$t.nav.privacy}</a>
-	</nav>
-	<div class="bottom-divider"></div>
-	<div class="lang-switcher">
-		{#each LANGS as l}
-			<button
-				class="lang-btn"
-				class:active={$lang === l.code}
-				onclick={() => setLang(l.code)}
-				title={l.label}
-			>{l.flag}</button>
-		{/each}
-	</div>
-</footer>
-
 <!-- Toast inviti — visibile in ogni pagina -->
 <InviteToast />
 
@@ -189,69 +169,6 @@
 <CookieBanner />
 
 <style>
-	/* ── Bottom bar fissa ── */
-	.bottom-bar {
-		position: fixed;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		height: 40px;
-		z-index: 200;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 1rem;
-		background: var(--sidebar-bg, #1a1a1a);
-		border-top: 1px solid var(--border);
-	}
-
-	.bottom-links {
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-	}
-	.bottom-link {
-		font-size: 0.75rem;
-		color: var(--text-muted, #888);
-		text-decoration: none;
-		opacity: 0.7;
-		transition: opacity 0.15s;
-	}
-	.bottom-link:hover { opacity: 1; }
-	.bottom-sep {
-		font-size: 0.75rem;
-		color: var(--text-muted, #888);
-		opacity: 0.4;
-	}
-	.bottom-divider {
-		width: 1px;
-		height: 16px;
-		background: var(--border);
-		opacity: 0.5;
-	}
-
-	/* ── Language switcher ── */
-	.lang-switcher {
-		display: flex;
-		gap: 0.25rem;
-	}
-	.lang-btn {
-		background: none;
-		border: 1.5px solid transparent;
-		border-radius: 5px;
-		padding: 0.1rem 0.25rem;
-		font-size: 1rem;
-		cursor: pointer;
-		opacity: 0.5;
-		transition: opacity 0.15s, border-color 0.15s;
-		line-height: 1;
-	}
-	.lang-btn:hover { opacity: 0.85; }
-	.lang-btn.active {
-		opacity: 1;
-		border-color: var(--accent);
-	}
-
 	/* ── Admin nav item ── */
 	:global(.nav-item-admin) {
 		color: #c8a84b;
