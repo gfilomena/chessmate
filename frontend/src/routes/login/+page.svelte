@@ -81,6 +81,7 @@
 	<title>Chess</title>
 </svelte:head>
 
+<div class="auth-page">
 {#if $authLoading}
 	<div class="auth-checking">
 		<div class="auth-spinner"></div>
@@ -186,8 +187,20 @@
 		</p>
 	</div>
 {/if}
+</div>
 
 <style>
+	/* ── Page wrapper ── */
+	.auth-page {
+		height: 100%;
+		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 1.5rem 1rem;
+	}
+
 	/* ── Auth checking ── */
 	.auth-checking {
 		display: flex;

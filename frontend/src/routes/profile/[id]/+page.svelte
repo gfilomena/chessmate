@@ -163,6 +163,7 @@
 		{#if games.length === 0}
 			<p style="color:var(--text-muted)">{$t.profile.no_games}</p>
 		{:else}
+		<div class="games-table-wrap">
 			<table class="games-table">
 				<thead>
 					<tr>
@@ -202,6 +203,7 @@
 					{/each}
 				</tbody>
 			</table>
+		</div>
 		{/if}
 	</div>
 
@@ -212,10 +214,29 @@
 	.profile-layout {
 		max-width: 800px;
 		margin: 0 auto;
-		padding: 2rem;
+		padding: 1.5rem 1.5rem 0;
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
+		gap: 1rem;
+		height: 100%;
+		overflow: hidden;
+	}
+
+	.games-section {
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		overflow: hidden;
+	}
+
+	.games-section h2 { flex-shrink: 0; }
+
+	.games-table-wrap {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
 	}
 
 	/* Header */

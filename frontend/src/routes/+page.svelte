@@ -124,9 +124,10 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		min-height: 100vh;
-		padding: 2rem 1.5rem 4rem;
-		gap: 3rem;
+		height: 100%;
+		padding: 1.5rem;
+		gap: 2rem;
+		overflow-y: auto;
 	}
 
 	/* ── Hero ── */

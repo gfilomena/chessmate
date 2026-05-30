@@ -447,7 +447,7 @@
 		padding: 0.4rem 1.5rem;
 		align-items: flex-start;
 		justify-content: center;
-		height: 100dvh;
+		height: 100%;
 		overflow: hidden;
 	}
 

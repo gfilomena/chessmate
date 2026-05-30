@@ -251,7 +251,9 @@
 	.legal-page {
 		max-width: 720px;
 		margin: 0 auto;
-		padding: 2rem 1.5rem 4rem;
+		padding: 1.5rem 1.5rem 1.5rem;
+		height: 100%;
+		overflow-y: auto;
 	}
 
 	.legal-card {

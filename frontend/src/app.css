@@ -20,11 +20,16 @@
 	--radius:     4px;
 }
 
+html {
+	height: 100%;
+}
+
 body {
 	font-family: 'Inter', system-ui, sans-serif;
 	background: var(--bg);
 	color: var(--text);
-	min-height: 100vh;
+	height: 100%;
+	overflow: hidden; /* niente scroll sulla finestra — tutto si adatta */
 }
 
 a {
@@ -36,7 +41,8 @@ a:hover { text-decoration: underline; }
 /* ── App shell: sidebar + content ─────────────────────── */
 .app-shell {
 	display: flex;
-	min-height: 100vh;
+	height: 100vh;
+	overflow: hidden;
 }
 
 /* ── Sidebar ───────────────────────────────────────────── */
@@ -197,8 +203,8 @@ a:hover { text-decoration: underline; }
 .main-content {
 	margin-left: var(--sidebar-w);
 	flex: 1;
-	min-height: 100vh;
-	overflow-x: hidden;
+	height: 100%;
+	overflow: hidden;    /* ogni pagina gestisce il proprio scroll interno */
 }
 
 /* Nessuna sidebar (utente non loggato) → content a piena larghezza */
@@ -431,9 +437,14 @@ a:hover { text-decoration: underline; }
 @media (max-width: 768px) {
 	.mobile-header { display: flex; }
 
+	.app-shell {
+		margin-top: 52px;
+		height: calc(100dvh - 52px);
+	}
+
 	.main-content {
 		margin-left: 0 !important;
-		padding-top: 52px;
+		padding-top: 0;
 	}
 
 	.sidebar {

@@ -61,7 +61,9 @@
 	.about-page {
 		max-width: 680px;
 		margin: 0 auto;
-		padding: 2rem 1.5rem 4rem;
+		padding: 1.5rem 1.5rem 1.5rem;
+		height: 100%;
+		overflow-y: auto;
 	}
 
 	.about-card {

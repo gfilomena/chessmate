@@ -376,7 +376,7 @@
 		display: flex;
 		gap: clamp(0.75rem, 1.5vw, 2rem);
 		padding: clamp(0.25rem, 0.4dvh, 0.5rem) clamp(0.75rem, 1.5vw, 2rem);
-		height: 100dvh;
+		height: 100%;
 		overflow: hidden;
 		align-items: center;
 		justify-content: center;
@@ -599,9 +599,8 @@
 	@media (max-width: 768px) {
 		.game-layout {
 			flex-direction: column;
-			/* 100dvh − 52px: sottrae l'header mobile fisso (52px definito in app.css)
-			   così il layout occupa esattamente lo spazio disponibile senza scroll */
-			height: calc(100dvh - 52px);
+			/* l'app-shell su mobile gestisce già height:calc(100dvh-52px) */
+			height: 100%;
 			padding: 0.5rem 0.5rem 0.5rem;
 			gap: 0.4rem;
 			align-items: center;

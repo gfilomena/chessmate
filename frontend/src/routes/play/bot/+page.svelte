@@ -612,7 +612,7 @@
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	height: 100dvh;
+	height: 100%;
 	overflow: hidden;
 	padding: clamp(0.5rem, 1.5dvh, 1.5rem) 1rem;
 	gap: clamp(0.3rem, 0.8dvh, 1rem);
@@ -798,7 +798,7 @@
 	display: flex;
 	gap: clamp(0.75rem, 1.5vw, 2rem);
 	padding: clamp(0.25rem, 0.4dvh, 0.5rem) clamp(0.75rem, 1.5vw, 2rem);
-	height: 100dvh;
+	height: 100%;
 	overflow: hidden;
 	align-items: center;
 	justify-content: center;

@@ -243,6 +243,7 @@
 		{/each}
 	</div>
 
+	<div class="tab-content">
 	<!-- ══════════════════════════════════════════════════════ OVERVIEW ══ -->
 	{#if activeTab === 'overview'}
 		{#if statsLoading && !stats}
@@ -469,6 +470,7 @@
 			</div>
 		</div>
 	{/if}
+	</div><!-- /tab-content -->
 
 </div>
 
@@ -521,7 +523,18 @@
 	.admin-wrap {
 		max-width: 1100px;
 		margin: 0 auto;
-		padding: 2rem 1.5rem 4rem;
+		padding: 1.25rem 1.5rem 0;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.tab-content {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		padding-bottom: 1rem;
 	}
 
 	/* ── Header ── */

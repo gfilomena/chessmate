@@ -101,10 +101,20 @@
 .page {
 	max-width: 680px;
 	margin: 0 auto;
-	padding: 2rem 1.5rem 4rem;
+	padding: 1.5rem 1.5rem 0;
 	display: flex;
 	flex-direction: column;
-	gap: 1.5rem;
+	gap: 1rem;
+	height: 100%;
+	overflow: hidden;
+}
+
+.header { flex-shrink: 0; }
+
+.table-wrap {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
 }
 
 .header {

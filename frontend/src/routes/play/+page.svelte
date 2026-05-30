@@ -429,7 +429,7 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		height: 100dvh;
+		height: 100%;
 		overflow: hidden;
 		gap: clamp(0.75rem, 1.5dvh, 1.75rem);
 		padding: clamp(0.5rem, 1.5dvh, 1.5rem) 1.5rem;

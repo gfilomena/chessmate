@@ -30,6 +30,7 @@
 	<title>Chess — {$t.auth.verify_page_title}</title>
 </svelte:head>
 
+<div class="auth-page">
 <div class="verify-card">
 	{#if status === 'checking'}
 		<div class="spinner-wrap">
@@ -47,8 +48,17 @@
 		<a href="/login" class="btn-back">{$t.auth.verify_page_back}</a>
 	{/if}
 </div>
+</div>
 
 <style>
+	.auth-page {
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow-y: auto;
+	}
+
 	.verify-card {
 		display: flex;
 		flex-direction: column;
