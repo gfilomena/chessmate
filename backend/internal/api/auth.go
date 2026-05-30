@@ -33,13 +33,33 @@ const (
 // Crea l'account con is_verified=false, invia email di verifica.
 // Non imposta il cookie — l'utente deve prima verificare l'email.
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	// ① Rate limiting: max 5 registrazioni per IP ogni 10 minuti
+	ip := realIP(r.RemoteAddr, r.Header.Get("X-Forwarded-For"))
+	if !regLimiter.Allow(ip, 5, 10*time.Minute) {
+		writeError(w, http.StatusTooManyRequests, "RATE_LIMITED", "Troppe richieste. Riprova tra qualche minuto.")
+		return
+	}
+
 	var body struct {
 		Username string `json:"username"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		Website  string `json:"website"` // campo honeypot — deve restare vuoto
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "INVALID_BODY", "Richiesta non valida")
+		return
+	}
+
+	// ② Honeypot: se compilato è un bot — finge successo senza fare nulla
+	if body.Website != "" {
+		writeJSON(w, http.StatusCreated, map[string]string{"status": "email_sent", "email": body.Email})
+		return
+	}
+
+	// ③ MX check: verifica che il dominio email esista e accetti posta
+	if !domainHasMX(body.Email) {
+		writeError(w, http.StatusBadRequest, "INVALID_EMAIL", "Il dominio email non esiste o non accetta posta")
 		return
 	}
 

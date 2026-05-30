@@ -44,12 +44,12 @@ export async function login(email: string, password: string) {
 	await loadUser();
 }
 
-export async function register(username: string, email: string, password: string) {
+export async function register(username: string, email: string, password: string, honeypot = '') {
 	const res = await fetch(`${API}/api/auth/register`, {
 		method: 'POST',
 		credentials: 'include',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ username, email, password })
+		body: JSON.stringify({ username, email, password, website: honeypot })
 	});
 	const json = await res.json();
 	if (!json.success) throw new Error(json.error?.message ?? 'Errore registrazione');

@@ -136,6 +136,10 @@
 					<span class="nav-icon">🎮</span>
 					<span>{$t.nav.play}</span>
 				</a>
+				<a href="/learn" class="nav-item" class:active={isActive('/learn')} onclick={() => sidebarOpen = false}>
+					<span class="nav-icon">📖</span>
+					<span>{$t.nav.learn}</span>
+				</a>
 				<a href="/leaderboard" class="nav-item" class:active={isActive('/leaderboard')} onclick={() => sidebarOpen = false}>
 					<span class="nav-icon">🏆</span>
 					<span>{$t.nav.leaderboard}</span>

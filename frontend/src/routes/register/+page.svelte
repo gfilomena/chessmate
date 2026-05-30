@@ -12,12 +12,13 @@
 		}
 	});
 
-	let username = $state('');
-	let email    = $state('');
-	let password = $state('');
-	let confirm  = $state('');
-	let error    = $state('');
-	let loading  = $state(false);
+	let username  = $state('');
+	let email     = $state('');
+	let password  = $state('');
+	let confirm   = $state('');
+	let honeypot  = $state(''); // campo nascosto anti-bot
+	let error     = $state('');
+	let loading   = $state(false);
 
 	// Stato post-registrazione
 	let emailSent     = $state(false);
@@ -40,7 +41,7 @@
 
 		loading = true;
 		try {
-			const data = await register(username, email, password);
+			const data = await register(username, email, password, honeypot);
 			sentToEmail = data.email ?? email;
 			emailSent = true;
 		} catch (err: any) {
@@ -162,6 +163,17 @@
 					autocomplete="new-password"
 				/>
 			</div>
+
+			<!-- Campo honeypot: nascosto agli umani, i bot lo compilano -->
+			<input
+				type="text"
+				name="website"
+				bind:value={honeypot}
+				autocomplete="off"
+				tabindex="-1"
+				aria-hidden="true"
+				style="position:absolute;opacity:0;pointer-events:none;height:0;width:0"
+			/>
 
 			<button class="btn btn-primary" type="submit" disabled={loading}>
 				{loading ? $t.auth.register_loading : $t.auth.register_btn}

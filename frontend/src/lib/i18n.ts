@@ -9,6 +9,7 @@ const translations = {
   it: {
     nav: {
       play: 'Gioca',
+      learn: 'Impara',
       leaderboard: 'Classifica',
       about: 'Chi siamo',
       privacy: 'Privacy',
@@ -257,6 +258,7 @@ const translations = {
   en: {
     nav: {
       play: 'Play',
+      learn: 'Learn',
       leaderboard: 'Leaderboard',
       about: 'About',
       privacy: 'Privacy',
@@ -505,6 +507,7 @@ const translations = {
   es: {
     nav: {
       play: 'Jugar',
+      learn: 'Aprender',
       leaderboard: 'Clasificación',
       about: 'Acerca de',
       privacy: 'Privacidad',
