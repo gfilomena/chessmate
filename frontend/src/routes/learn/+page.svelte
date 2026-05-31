@@ -119,68 +119,56 @@
 
 	const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
+	// Tipo condiviso per le entry della timeline
+	interface MoveEntry { fen: string; from: string; to: string; san: string }
+	const INIT_ENTRY: MoveEntry = { fen: INITIAL_FEN, from: '', to: '', san: '' };
+
 	// ════════════════════════════════════════════════════════════
 	// MODALITÀ A — Libero (regole standard, turni liberi)
-	// Stato come FEN string — garantisce reattività Svelte 5
 	// ════════════════════════════════════════════════════════════
-	let fenA      = $state(INITIAL_FEN);
-	let fenStackA = $state<string[]>([INITIAL_FEN]); // stack per undo
-	let sanHistA  = $state<string[]>([]);            // SAN history per il log
-	let lastMoveA = $state<{ from: string; to: string } | null>(null);
+	let historyA = $state<MoveEntry[]>([INIT_ENTRY]);
+	let idxA     = $state(0);
 
-	const turnA = $derived(fenA.split(' ')[1] === 'w' ? 'white' : 'black');
+	const fenA      = $derived(historyA[idxA].fen);
+	const lastMoveA = $derived(idxA > 0 ? { from: historyA[idxA].from, to: historyA[idxA].to } : null);
+	const turnA     = $derived(fenA.split(' ')[1] === 'w' ? 'white' : 'black');
+	const sanHistA  = $derived(historyA.slice(1, idxA + 1).map(e => e.san));
 
 	function handleFreeMove(from: string, to: string, promo?: string) {
 		const c = new Chess();
 		c.load(fenA);
-		let newFen: string | null = null;
-		let newSan: string | null = null;
+		let entry: MoveEntry | null = null;
 
 		try {
 			const mv = c.move({ from, to, promotion: (promo ?? 'q') as any });
-			newFen = c.fen();
-			newSan = mv?.san ?? null;
+			entry = { fen: c.fen(), from, to, san: mv?.san ?? `${from}-${to}` };
 		} catch {
-			// freePlay: turno sbagliato → inverti il turno nel FEN
-			const tmp = new Chess();
-			const parts = fenA.split(' ');
 			const piece = c.get(from as any);
 			if (!piece) return;
+			const parts = fenA.split(' ');
 			parts[1] = piece.color;
+			const tmp = new Chess();
 			tmp.load(parts.join(' '));
 			try {
 				const mv = tmp.move({ from, to, promotion: (promo ?? 'q') as any });
-				newFen = tmp.fen();
-				newSan = mv?.san ?? `${from}-${to}`;
+				entry = { fen: tmp.fen(), from, to, san: mv?.san ?? `${from}-${to}` };
 			} catch { return; }
 		}
 
-		if (newFen) {
-			fenA      = newFen;                              // nuovo primitivo → Svelte re-render
-			fenStackA = [...fenStackA, newFen];
-			sanHistA  = newSan ? [...sanHistA, newSan] : sanHistA;
-			lastMoveA = { from, to };
+		if (entry) {
+			// Tronca storia futura se navigando nel passato, poi appendi
+			historyA = [...historyA.slice(0, idxA + 1), entry];
+			idxA     = historyA.length - 1;
 			evalResult = null; bestArrow = null; bestExplain = '';
 		}
 	}
 
-	function undoA() {
-		if (fenStackA.length <= 1) return;
-		const stack = fenStackA.slice(0, -1);
-		fenA      = stack[stack.length - 1];
-		fenStackA = stack;
-		sanHistA  = sanHistA.slice(0, -1);
-		lastMoveA = null;
+	function navA(i: number) {
+		idxA = Math.max(0, Math.min(i, historyA.length - 1));
 		evalResult = null; bestArrow = null;
 	}
-
-	function resetA() {
-		fenA      = INITIAL_FEN;
-		fenStackA = [INITIAL_FEN];
-		sanHistA  = [];
-		lastMoveA = null;
-		evalResult = null; bestArrow = null; bestExplain = '';
-	}
+	function undoA()   { navA(idxA - 1); }
+	function resetA()  { historyA = [INIT_ENTRY]; idxA = 0; evalResult = null; bestArrow = null; bestExplain = ''; }
 
 	// ════════════════════════════════════════════════════════════
 	// MODALITÀ B — Setup (posizionamento libero senza regole)
@@ -350,21 +338,29 @@
 
 	// ════════════════════════════════════════════════════════════
 	// MODALITÀ APERTURA
-	// Stato come FEN string — garantisce reattività Svelte 5
 	// ════════════════════════════════════════════════════════════
 	let selectedOpening = $state<Opening | null>(null);
-	let fenOp           = $state(INITIAL_FEN);
-	let sanHistOp       = $state<string[]>([]);
-	let lastMoveOp      = $state<{ from: string; to: string } | null>(null);
+	let historyOp       = $state<MoveEntry[]>([INIT_ENTRY]);
+	let idxOp           = $state(0);
 	let detectedOpening = $state<Opening | null>(null);
 	let theoryDeviation = $state(false);
 	let theoryArrow     = $state<{ from: string; to: string; color: string } | null>(null);
 
+	const fenOp      = $derived(historyOp[idxOp].fen);
+	const lastMoveOp = $derived(idxOp > 0 ? { from: historyOp[idxOp].from, to: historyOp[idxOp].to } : null);
+	const sanHistOp  = $derived(historyOp.slice(1, idxOp + 1).map(e => e.san));
+
+	function _updateOpeningDetection(history: string[]) {
+		detectedOpening = detectOpening(history);
+		if (selectedOpening) {
+			theoryDeviation = nextTheoreticalMoves(selectedOpening, history).length === 0 && history.length > 0;
+		}
+	}
+
 	function selectOpening(op: Opening) {
 		selectedOpening = op;
-		fenOp           = INITIAL_FEN;
-		sanHistOp       = [];
-		lastMoveOp      = null;
+		historyOp       = [INIT_ENTRY];
+		idxOp           = 0;
 		detectedOpening = null;
 		theoryDeviation = false;
 		theoryArrow     = null;
@@ -376,15 +372,12 @@
 	function handleOpeningMove(from: string, to: string, promo?: string) {
 		const c = new Chess();
 		c.load(fenOp);
-		let newFen: string | null = null;
-		let newHistory: string[]  = sanHistOp;
+		let entry: MoveEntry | null = null;
 
 		try {
 			const mv = c.move({ from, to, promotion: (promo ?? 'q') as any });
-			newFen    = c.fen();
-			newHistory = c.history();
+			entry = { fen: c.fen(), from, to, san: mv?.san ?? `${from}-${to}` };
 		} catch {
-			// freePlay: turno sbagliato → inverti
 			const piece = c.get(from as any);
 			if (!piece) return;
 			const parts = fenOp.split(' ');
@@ -392,30 +385,28 @@
 			const tmp = new Chess();
 			tmp.load(parts.join(' '));
 			try {
-				tmp.move({ from, to, promotion: (promo ?? 'q') as any });
-				newFen    = tmp.fen();
-				newHistory = [...sanHistOp, `${from}-${to}`];
+				const mv = tmp.move({ from, to, promotion: (promo ?? 'q') as any });
+				entry = { fen: tmp.fen(), from, to, san: mv?.san ?? `${from}-${to}` };
 			} catch { return; }
 		}
 
-		if (newFen) {
-			fenOp      = newFen;            // nuovo primitivo → Svelte re-render garantito
-			sanHistOp  = newHistory;
-			lastMoveOp = { from, to };
+		if (entry) {
+			historyOp = [...historyOp.slice(0, idxOp + 1), entry];
+			idxOp     = historyOp.length - 1;
 			evalResult = null; bestArrow = null; bestExplain = ''; theoryArrow = null;
-
-			detectedOpening = detectOpening(newHistory);
-			if (selectedOpening) {
-				const nextMoves = nextTheoreticalMoves(selectedOpening, newHistory);
-				theoryDeviation = nextMoves.length === 0 && newHistory.length > 0;
-			}
+			_updateOpeningDetection(historyOp.slice(1).map(e => e.san));
 		}
 	}
 
+	function navOp(i: number) {
+		idxOp = Math.max(0, Math.min(i, historyOp.length - 1));
+		evalResult = null; bestArrow = null; theoryArrow = null;
+		_updateOpeningDetection(historyOp.slice(1, idxOp + 1).map(e => e.san));
+	}
+
 	function resetOpening() {
-		fenOp           = INITIAL_FEN;
-		sanHistOp       = [];
-		lastMoveOp      = null;
+		historyOp       = [INIT_ENTRY];
+		idxOp           = 0;
 		detectedOpening = null;
 		theoryDeviation = false;
 		theoryArrow     = null;
@@ -427,10 +418,7 @@
 	async function showTheoryMove() {
 		if (!selectedOpening) return;
 		const nextMoves = nextTheoreticalMoves(selectedOpening, sanHistOp);
-		if (nextMoves.length === 0) {
-			await showBestMove(fenOp);
-			return;
-		}
+		if (nextMoves.length === 0) { await showBestMove(fenOp); return; }
 		try {
 			const tmp = new Chess();
 			tmp.load(fenOp);
@@ -439,9 +427,7 @@
 				theoryArrow = { from: mv.from, to: mv.to, color: '#4caf50' };
 				bestExplain = `Mossa teorica: ${mv.san} — prosegui sulla linea principale della ${selectedOpening.nameIt}.`;
 			}
-		} catch {
-			await showBestMove(fenOp);
-		}
+		} catch { await showBestMove(fenOp); }
 	}
 
 	// ── FEN corrente per analisi (dichiarato dopo tutte le variabili) ────────────
@@ -452,13 +438,26 @@
 		mode === 'opening' ? fenOp : INITIAL_FEN
 	);
 
-	// ── Keyboard navigation (PGN) ─────────────────────────────────────────────────
+	// ── Keyboard navigation (tutte le modalità con storia) ───────────────────────
 	function handleKey(e: KeyboardEvent) {
-		if (mode !== 'pgn') return;
-		if (e.key === 'ArrowLeft')  { e.preventDefault(); pgPrev(); }
-		if (e.key === 'ArrowRight') { e.preventDefault(); pgNext(); }
-		if (e.key === 'ArrowUp')    { e.preventDefault(); pgFirst(); }
-		if (e.key === 'ArrowDown')  { e.preventDefault(); pgLast(); }
+		if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) return;
+		e.preventDefault();
+		if (mode === 'pgn') {
+			if (e.key === 'ArrowLeft')  pgPrev();
+			if (e.key === 'ArrowRight') pgNext();
+			if (e.key === 'ArrowUp')    pgFirst();
+			if (e.key === 'ArrowDown')  pgLast();
+		} else if (mode === 'free-a') {
+			if (e.key === 'ArrowLeft')  navA(idxA - 1);
+			if (e.key === 'ArrowRight') navA(idxA + 1);
+			if (e.key === 'ArrowUp')    navA(0);
+			if (e.key === 'ArrowDown')  navA(historyA.length - 1);
+		} else if (mode === 'opening') {
+			if (e.key === 'ArrowLeft')  navOp(idxOp - 1);
+			if (e.key === 'ArrowRight') navOp(idxOp + 1);
+			if (e.key === 'ArrowUp')    navOp(0);
+			if (e.key === 'ArrowDown')  navOp(historyOp.length - 1);
+		}
 	}
 
 	// ── Flip board ───────────────────────────────────────────────────────────────
@@ -569,6 +568,36 @@
 					/>
 				{/if}
 			</div>
+
+			<!-- ── Timeline navigazione (tutte le modalità tranne Setup) ── -->
+			{#if mode !== 'setup'}
+				{@const total   = mode === 'free-a' ? historyA.length - 1
+				                : mode === 'pgn'    ? pgnPositions.length - 1
+				                :                    historyOp.length - 1}
+				{@const current = mode === 'free-a' ? idxA
+				                : mode === 'pgn'    ? pgnIdx
+				                :                    idxOp}
+				<div class="timeline-bar">
+					<button class="tl-btn" onclick={() => mode==='free-a' ? navA(0)       : mode==='pgn' ? pgFirst() : navOp(0)}       disabled={current===0} title="Prima mossa">⏮</button>
+					<button class="tl-btn" onclick={() => mode==='free-a' ? navA(idxA-1)  : mode==='pgn' ? pgPrev()  : navOp(idxOp-1)} disabled={current===0} title="← Precedente">◀</button>
+
+					<!-- Track cliccabile -->
+					<div class="tl-track" onclick={(e) => {
+						const pct = e.offsetX / (e.currentTarget as HTMLElement).offsetWidth;
+						const idx = Math.round(pct * total);
+						if (mode==='free-a') navA(idx);
+						else if (mode==='pgn') pgnIdx = idx;
+						else navOp(idx);
+					}}>
+						<div class="tl-fill" style="width:{total > 0 ? (current/total)*100 : 0}%"></div>
+						<div class="tl-thumb" style="left:{total > 0 ? (current/total)*100 : 0}%"></div>
+					</div>
+
+					<span class="tl-counter">{current}<span class="tl-sep">/</span>{total}</span>
+					<button class="tl-btn" onclick={() => mode==='free-a' ? navA(idxA+1)           : mode==='pgn' ? pgNext()  : navOp(idxOp+1)}          disabled={current===total} title="Successiva →">▶</button>
+					<button class="tl-btn" onclick={() => mode==='free-a' ? navA(historyA.length-1): mode==='pgn' ? pgLast()  : navOp(historyOp.length-1)} disabled={current===total} title="Ultima mossa">⏭</button>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Pannello laterale -->
@@ -953,15 +982,83 @@
 	/* ── Board col ── */
 	.board-col {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		gap: 0.4rem;
 		min-height: 0;
 	}
 	.board-wrap {
 		width: 100%;
-		max-width: min(calc(100% - 0px), calc(100vh - 160px));
+		max-width: min(calc(100% - 0px), calc(100vh - 200px));
 		aspect-ratio: 1;
 	}
+
+	/* ── Timeline ── */
+	.timeline-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		width: 100%;
+		max-width: min(calc(100% - 0px), calc(100vh - 200px));
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.35rem 0.5rem;
+		flex-shrink: 0;
+	}
+	.tl-btn {
+		background: none;
+		border: none;
+		color: var(--text-muted);
+		font-size: 0.9rem;
+		cursor: pointer;
+		padding: 0.1rem 0.3rem;
+		border-radius: 4px;
+		line-height: 1;
+		transition: color 0.15s, background 0.1s;
+		flex-shrink: 0;
+	}
+	.tl-btn:hover:not(:disabled) { color: var(--text); background: rgba(255,255,255,0.07); }
+	.tl-btn:disabled { opacity: 0.3; cursor: default; }
+
+	.tl-track {
+		flex: 1;
+		height: 5px;
+		background: var(--border);
+		border-radius: 3px;
+		cursor: pointer;
+		position: relative;
+		overflow: visible;
+	}
+	.tl-fill {
+		height: 100%;
+		background: var(--accent);
+		border-radius: 3px;
+		transition: width 0.12s ease;
+		pointer-events: none;
+	}
+	.tl-thumb {
+		position: absolute;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		width: 11px;
+		height: 11px;
+		border-radius: 50%;
+		background: var(--accent);
+		border: 2px solid var(--bg-card);
+		transition: left 0.12s ease;
+		pointer-events: none;
+	}
+	.tl-counter {
+		font-size: 0.68rem;
+		font-family: monospace;
+		color: var(--text-muted);
+		min-width: 36px;
+		text-align: center;
+		flex-shrink: 0;
+	}
+	.tl-sep { opacity: 0.4; margin: 0 1px; }
 
 	/* ── Panel col ── */
 	.panel-col {
