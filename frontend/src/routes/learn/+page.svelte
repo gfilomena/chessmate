@@ -117,69 +117,69 @@
 		}
 	}
 
-	// ── FEN corrente usato per analisi ────────────────────────────────────────────
-	const currentFen = $derived(() => {
-		if (mode === 'free-a')  return chessA.fen();
-		if (mode === 'setup')   return setupFen;
-		if (mode === 'pgn')     return pgnPositions[pgnIdx]?.fen ?? INITIAL_FEN;
-		if (mode === 'opening') return chessOp.fen();
-		return INITIAL_FEN;
-	});
-
 	const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 	// ════════════════════════════════════════════════════════════
 	// MODALITÀ A — Libero (regole standard, turni liberi)
+	// Stato come FEN string — garantisce reattività Svelte 5
 	// ════════════════════════════════════════════════════════════
-	let chessA     = $state(new Chess());
-	let lastMoveA  = $state<{ from: string; to: string } | null>(null);
+	let fenA      = $state(INITIAL_FEN);
+	let fenStackA = $state<string[]>([INITIAL_FEN]); // stack per undo
+	let sanHistA  = $state<string[]>([]);            // SAN history per il log
+	let lastMoveA = $state<{ from: string; to: string } | null>(null);
 
-	const turnA = $derived(chessA.turn() === 'w' ? 'white' : 'black');
+	const turnA = $derived(fenA.split(' ')[1] === 'w' ? 'white' : 'black');
 
 	function handleFreeMove(from: string, to: string, promo?: string) {
-		// Prova prima con il turno attuale; se fallisce, inverti il turno nel FEN
-		let moved = false;
+		const c = new Chess();
+		c.load(fenA);
+		let newFen: string | null = null;
+		let newSan: string | null = null;
+
 		try {
-			chessA.move({ from, to, promotion: (promo ?? 'q') as any });
-			moved = true;
+			const mv = c.move({ from, to, promotion: (promo ?? 'q') as any });
+			newFen = c.fen();
+			newSan = mv?.san ?? null;
 		} catch {
+			// freePlay: turno sbagliato → inverti il turno nel FEN
+			const tmp = new Chess();
+			const parts = fenA.split(' ');
+			const piece = c.get(from as any);
+			if (!piece) return;
+			parts[1] = piece.color;
+			tmp.load(parts.join(' '));
 			try {
-				const parts = chessA.fen().split(' ');
-				const piece = chessA.get(from as any);
-				if (piece) {
-					parts[1] = piece.color;
-					const tmp = new Chess();
-					tmp.load(parts.join(' '));
-					tmp.move({ from, to, promotion: (promo ?? 'q') as any });
-					// Aggiorniamo chessA caricando il FEN risultante
-					chessA.load(tmp.fen());
-					moved = true;
-				}
-			} catch {}
+				const mv = tmp.move({ from, to, promotion: (promo ?? 'q') as any });
+				newFen = tmp.fen();
+				newSan = mv?.san ?? `${from}-${to}`;
+			} catch { return; }
 		}
-		if (moved) {
-			chessA    = chessA;
+
+		if (newFen) {
+			fenA      = newFen;                              // nuovo primitivo → Svelte re-render
+			fenStackA = [...fenStackA, newFen];
+			sanHistA  = newSan ? [...sanHistA, newSan] : sanHistA;
 			lastMoveA = { from, to };
-			evalResult  = null;
-			bestArrow   = null;
-			bestExplain = '';
+			evalResult = null; bestArrow = null; bestExplain = '';
 		}
 	}
 
 	function undoA() {
-		chessA.undo();
-		chessA    = chessA;
+		if (fenStackA.length <= 1) return;
+		const stack = fenStackA.slice(0, -1);
+		fenA      = stack[stack.length - 1];
+		fenStackA = stack;
+		sanHistA  = sanHistA.slice(0, -1);
 		lastMoveA = null;
-		evalResult  = null;
-		bestArrow   = null;
+		evalResult = null; bestArrow = null;
 	}
 
 	function resetA() {
-		chessA    = new Chess();
+		fenA      = INITIAL_FEN;
+		fenStackA = [INITIAL_FEN];
+		sanHistA  = [];
 		lastMoveA = null;
-		evalResult  = null;
-		bestArrow   = null;
-		bestExplain = '';
+		evalResult = null; bestArrow = null; bestExplain = '';
 	}
 
 	// ════════════════════════════════════════════════════════════
@@ -350,9 +350,11 @@
 
 	// ════════════════════════════════════════════════════════════
 	// MODALITÀ APERTURA
+	// Stato come FEN string — garantisce reattività Svelte 5
 	// ════════════════════════════════════════════════════════════
 	let selectedOpening = $state<Opening | null>(null);
-	let chessOp         = $state(new Chess());
+	let fenOp           = $state(INITIAL_FEN);
+	let sanHistOp       = $state<string[]>([]);
 	let lastMoveOp      = $state<{ from: string; to: string } | null>(null);
 	let detectedOpening = $state<Opening | null>(null);
 	let theoryDeviation = $state(false);
@@ -360,7 +362,8 @@
 
 	function selectOpening(op: Opening) {
 		selectedOpening = op;
-		chessOp         = new Chess(); // inizia dalla posizione iniziale standard
+		fenOp           = INITIAL_FEN;
+		sanHistOp       = [];
 		lastMoveOp      = null;
 		detectedOpening = null;
 		theoryDeviation = false;
@@ -371,46 +374,47 @@
 	}
 
 	function handleOpeningMove(from: string, to: string, promo?: string) {
+		const c = new Chess();
+		c.load(fenOp);
+		let newFen: string | null = null;
+		let newHistory: string[]  = sanHistOp;
+
 		try {
-			const piece = chessOp.get(from as any);
-			let moved = false;
+			const mv = c.move({ from, to, promotion: (promo ?? 'q') as any });
+			newFen    = c.fen();
+			newHistory = c.history();
+		} catch {
+			// freePlay: turno sbagliato → inverti
+			const piece = c.get(from as any);
+			if (!piece) return;
+			const parts = fenOp.split(' ');
+			parts[1] = piece.color;
+			const tmp = new Chess();
+			tmp.load(parts.join(' '));
 			try {
-				chessOp.move({ from, to, promotion: (promo ?? 'q') as any });
-				moved = true;
-			} catch {
-				if (piece) {
-					const parts = chessOp.fen().split(' ');
-					parts[1] = piece.color;
-					const tmp = new Chess();
-					tmp.load(parts.join(' '));
-					tmp.move({ from, to, promotion: (promo ?? 'q') as any });
-					chessOp.load(tmp.fen());
-					moved = true;
-				}
-			}
-			if (moved) {
-				chessOp    = chessOp;
-				lastMoveOp = { from, to };
-				evalResult  = null;
-				bestArrow   = null;
-				bestExplain = '';
-				theoryArrow = null;
+				tmp.move({ from, to, promotion: (promo ?? 'q') as any });
+				newFen    = tmp.fen();
+				newHistory = [...sanHistOp, `${from}-${to}`];
+			} catch { return; }
+		}
 
-				// Aggiorna rilevamento apertura
-				const history = chessOp.history();
-				detectedOpening = detectOpening(history);
+		if (newFen) {
+			fenOp      = newFen;            // nuovo primitivo → Svelte re-render garantito
+			sanHistOp  = newHistory;
+			lastMoveOp = { from, to };
+			evalResult = null; bestArrow = null; bestExplain = ''; theoryArrow = null;
 
-				// Verifica deviazione dalla teoria
-				if (selectedOpening) {
-					const nextMoves = nextTheoreticalMoves(selectedOpening, history);
-					theoryDeviation = nextMoves.length === 0 && history.length > 0;
-				}
+			detectedOpening = detectOpening(newHistory);
+			if (selectedOpening) {
+				const nextMoves = nextTheoreticalMoves(selectedOpening, newHistory);
+				theoryDeviation = nextMoves.length === 0 && newHistory.length > 0;
 			}
-		} catch {}
+		}
 	}
 
 	function resetOpening() {
-		chessOp         = new Chess();
+		fenOp           = INITIAL_FEN;
+		sanHistOp       = [];
 		lastMoveOp      = null;
 		detectedOpening = null;
 		theoryDeviation = false;
@@ -422,26 +426,31 @@
 
 	async function showTheoryMove() {
 		if (!selectedOpening) return;
-		const history  = chessOp.history();
-		const nextMoves = nextTheoreticalMoves(selectedOpening, history);
+		const nextMoves = nextTheoreticalMoves(selectedOpening, sanHistOp);
 		if (nextMoves.length === 0) {
-			// Fuori dalla teoria → usa Stockfish
-			await showBestMove(chessOp.fen());
+			await showBestMove(fenOp);
 			return;
 		}
-		// Mostra la prima mossa teorica sulla scacchiera
 		try {
 			const tmp = new Chess();
-			tmp.load(chessOp.fen());
+			tmp.load(fenOp);
 			const mv = tmp.move(nextMoves[0]);
 			if (mv) {
 				theoryArrow = { from: mv.from, to: mv.to, color: '#4caf50' };
 				bestExplain = `Mossa teorica: ${mv.san} — prosegui sulla linea principale della ${selectedOpening.nameIt}.`;
 			}
 		} catch {
-			await showBestMove(chessOp.fen());
+			await showBestMove(fenOp);
 		}
 	}
+
+	// ── FEN corrente per analisi (dichiarato dopo tutte le variabili) ────────────
+	const currentFen = $derived(
+		mode === 'free-a'  ? fenA :
+		mode === 'setup'   ? setupFen :
+		mode === 'pgn'     ? (pgnPositions[pgnIdx]?.fen ?? INITIAL_FEN) :
+		mode === 'opening' ? fenOp : INITIAL_FEN
+	);
 
 	// ── Keyboard navigation (PGN) ─────────────────────────────────────────────────
 	function handleKey(e: KeyboardEvent) {
@@ -514,7 +523,7 @@
 			<div class="board-wrap">
 				{#if mode === 'free-a'}
 					<Board
-						fen={chessA.fen()}
+						fen={fenA}
 						playerColor="white"
 						isMyTurn={true}
 						freePlay={true}
@@ -539,7 +548,7 @@
 					/>
 				{:else if mode === 'opening'}
 					<Board
-						fen={chessOp.fen()}
+						fen={fenOp}
 						playerColor="white"
 						isMyTurn={true}
 						freePlay={true}
@@ -574,7 +583,7 @@
 							<span class="eval-desc">{evalText()}</span>
 						</div>
 					{/if}
-					<button class="hint-btn" onclick={() => showBestMove(chessA.fen())}
+					<button class="hint-btn" onclick={() => showBestMove(fenA)}
 						disabled={!engineReady || analyzing}>
 						{analyzing ? '⏳ Analisi…' : '💡 Miglior Mossa'}
 					</button>
@@ -584,24 +593,24 @@
 							{bestExplain}
 						</div>
 					{/if}
-					<button class="eval-btn" onclick={() => analyzePosition(chessA.fen())}
+					<button class="eval-btn" onclick={() => analyzePosition(fenA)}
 						disabled={!engineReady || analyzing}>
 						📊 Valuta posizione
 					</button>
 				</div>
 
 				<div class="free-actions">
-					<button class="action-btn" onclick={undoA} disabled={chessA.history().length === 0}>
+					<button class="action-btn" onclick={undoA} disabled={sanHistA.length === 0}>
 						↩ Annulla
 					</button>
 					<button class="action-btn danger" onclick={resetA}>↺ Reset</button>
 				</div>
 
-				{#if chessA.history().length > 0}
+				{#if sanHistA.length > 0}
 					<div class="panel-card moves-log">
 						<p class="panel-label">Mosse</p>
 						<div class="free-moves">
-							{#each chessA.history() as san, i}
+							{#each sanHistA as san, i}
 								{#if i % 2 === 0}<span class="move-num">{Math.floor(i/2)+1}.</span>{/if}
 								<span class="san-chip">{san}</span>
 							{/each}
@@ -793,7 +802,7 @@
 								<span class="eval-desc">{evalText()}</span>
 							</div>
 						{/if}
-						<button class="eval-btn" onclick={() => analyzePosition(chessOp.fen())}
+						<button class="eval-btn" onclick={() => analyzePosition(fenOp)}
 							disabled={!engineReady || analyzing}>
 							📊 Valuta posizione
 						</button>
