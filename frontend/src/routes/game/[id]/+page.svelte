@@ -253,8 +253,8 @@
 		<!-- Nav bar timeline (solo mobile) -->
 		<div class="mobile-nav-bar">
 			<NavTimeline
-				current={viewIndex ?? history.length - 1}
-				total={history.length - 1}
+				current={Math.max(0, viewIndex ?? history.length - 1)}
+				total={Math.max(0, history.length - 1)}
 				label={navLabel}
 				showTrack={true}
 				onFirst={navFirst}
@@ -352,14 +352,15 @@
 		<!-- Navigazione mosse -->
 		<div class="nav-row" class:reviewing={isReviewing}>
 			<NavTimeline
-				current={viewIndex ?? history.length - 1}
-				total={history.length - 1}
+				current={Math.max(0, viewIndex ?? history.length - 1)}
+				total={Math.max(0, history.length - 1)}
 				label={navLabel}
 				showTrack={false}
 				onFirst={navFirst}
 				onPrev={navPrev}
 				onNext={navNext}
 				onLast={navLast}
+				onGoto={navTo}
 			/>
 		</div>
 

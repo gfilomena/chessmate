@@ -97,7 +97,7 @@
 	const DRAG_THRESHOLD = 8; // px before entering drag mode
 
 	// ── Chess engine ───────────────────────────────────────────────
-	const chess = $derived(() => {
+	const chess = $derived.by(() => {
 		const c = new Chess();
 		try { c.load(fen); } catch {}
 		return c;
@@ -111,7 +111,7 @@
 	function sq(f: string, r: number) { return `${f}${r}`; }
 
 	function pieceSvg(square: string): string | null {
-		const p = chess().get(square as any);
+		const p = chess.get(square as any);
 		if (!p) return null;
 		return PIECE_SVG[`${p.color}${p.type.toUpperCase()}` as PieceCode] ?? null;
 	}
@@ -125,16 +125,16 @@
 	// In freePlay, se il pezzo è del colore "sbagliato" creiamo un'istanza
 	// chess con il turno invertito per calcolare le mosse legali.
 	function computeLegalTargets(square: string): string[] {
-		const piece = chess().get(square as any);
+		const piece = chess.get(square as any);
 		if (!piece) return [];
 
 		// Normale: usa l'istanza corrente
-		let targets = chess().moves({ square: square as any, verbose: true }).map((m: any) => m.to);
+		let targets = chess.moves({ square: square as any, verbose: true }).map((m: any) => m.to);
 		if (targets.length > 0 || !freePlay) return targets;
 
 		// freePlay: il pezzo è del colore "non di turno" → invertiamo il turno nel FEN
 		try {
-			const parts = chess().fen().split(' ');
+			const parts = chess.fen().split(' ');
 			parts[1] = piece.color;             // setta il turno al colore del pezzo
 			const temp = new Chess();
 			temp.load(parts.join(' '));
@@ -150,7 +150,7 @@
 		if (!isMyTurn) return;
 
 		if (selectedSquare === null) {
-			const piece = chess().get(square as any);
+			const piece = chess.get(square as any);
 			const myColor = playerColor === 'white' ? 'w' : 'b';
 			// freePlay: qualsiasi pezzo è selezionabile; normale: solo il proprio
 			if (!piece || (!freePlay && piece.color !== myColor)) return;
@@ -175,7 +175,7 @@
 		//    `click` event that Playwright relies on during automated testing.
 		if (e.pointerType === 'touch') e.preventDefault();
 
-		const piece   = chess().get(square as any);
+		const piece   = chess.get(square as any);
 		const myColor = playerColor === 'white' ? 'w' : 'b';
 		// freePlay: qualsiasi pezzo è draggabile; normale: solo il proprio
 		const isOwn   = !!(piece && (freePlay || piece.color === myColor));
@@ -269,7 +269,7 @@
 
 	// ── Shared move logic ──────────────────────────────────────────
 	function tryMove(from: string, to: string) {
-		const piece = chess().get(from as any);
+		const piece = chess.get(from as any);
 		const isPromo =
 			piece?.type === 'p' &&
 			((playerColor === 'white' && to[1] === '8') ||

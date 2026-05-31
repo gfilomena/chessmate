@@ -46,6 +46,14 @@
 		const p    = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
 		onGoto(Math.round(p * total));
 	}
+
+	function handleTrackKey(e: KeyboardEvent) {
+		if (!onGoto || total === 0) return;
+		if (e.key === 'ArrowRight') { e.preventDefault(); onGoto(Math.min(total, current + 1)); }
+		if (e.key === 'ArrowLeft')  { e.preventDefault(); onGoto(Math.max(0, current - 1)); }
+		if (e.key === 'Home')       { e.preventDefault(); onGoto(0); }
+		if (e.key === 'End')        { e.preventDefault(); onGoto(total); }
+	}
 </script>
 
 <div class="ntl" class:with-track={showTrack}>
@@ -53,7 +61,9 @@
 	<button class="ntl-btn" onclick={onPrev}  disabled={atStart} title="Mossa precedente">◀</button>
 
 	{#if showTrack}
-		<div class="ntl-track" onclick={handleTrackClick} role="slider"
+		<div class="ntl-track" onclick={handleTrackClick} onkeydown={handleTrackKey}
+			role="slider" tabindex="0"
+			aria-label="Naviga mosse"
 			aria-valuenow={current} aria-valuemin={0} aria-valuemax={total}>
 			<div class="ntl-fill"  style="width:{pct}%"></div>
 			<div class="ntl-thumb" style="left:{pct}%"></div>

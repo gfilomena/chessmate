@@ -24,7 +24,7 @@
 	let evalPct      = $derived(evalResult
 		? (evalResult.isMate ? (evalResult.mateIn! > 0 ? 98 : 2) : 50 + 50 * Math.tanh(evalResult.score / 400))
 		: 50);
-	let evalText = $derived(() => {
+	const evalText = $derived.by(() => {
 		if (!evalResult) return '';
 		if (evalResult.isMate) return `Matto in ${Math.abs(evalResult.mateIn!)}`;
 		const p = evalResult.score / 100;
@@ -124,6 +124,27 @@
 	interface MoveEntry { fen: string; from: string; to: string; san: string }
 	const INIT_ENTRY: MoveEntry = { fen: INITIAL_FEN, from: '', to: '', san: '' };
 
+	// ── Helper condiviso: applica una mossa su un FEN (turno libero) ──────────
+	function applyMove(fen: string, from: string, to: string, promo?: string): MoveEntry | null {
+		const c = new Chess();
+		c.load(fen);
+		try {
+			const mv = c.move({ from, to, promotion: (promo ?? 'q') as any });
+			return { fen: c.fen(), from, to, san: mv?.san ?? `${from}-${to}` };
+		} catch {
+			const piece = c.get(from as any);
+			if (!piece) return null;
+			const parts = fen.split(' ');
+			parts[1] = piece.color;
+			const tmp = new Chess();
+			tmp.load(parts.join(' '));
+			try {
+				const mv = tmp.move({ from, to, promotion: (promo ?? 'q') as any });
+				return { fen: tmp.fen(), from, to, san: mv?.san ?? `${from}-${to}` };
+			} catch { return null; }
+		}
+	}
+
 	// ════════════════════════════════════════════════════════════
 	// MODALITÀ A — Libero (regole standard, turni liberi)
 	// ════════════════════════════════════════════════════════════
@@ -136,32 +157,11 @@
 	const sanHistA  = $derived(historyA.slice(1, idxA + 1).map(e => e.san));
 
 	function handleFreeMove(from: string, to: string, promo?: string) {
-		const c = new Chess();
-		c.load(fenA);
-		let entry: MoveEntry | null = null;
-
-		try {
-			const mv = c.move({ from, to, promotion: (promo ?? 'q') as any });
-			entry = { fen: c.fen(), from, to, san: mv?.san ?? `${from}-${to}` };
-		} catch {
-			const piece = c.get(from as any);
-			if (!piece) return;
-			const parts = fenA.split(' ');
-			parts[1] = piece.color;
-			const tmp = new Chess();
-			tmp.load(parts.join(' '));
-			try {
-				const mv = tmp.move({ from, to, promotion: (promo ?? 'q') as any });
-				entry = { fen: tmp.fen(), from, to, san: mv?.san ?? `${from}-${to}` };
-			} catch { return; }
-		}
-
-		if (entry) {
-			// Tronca storia futura se navigando nel passato, poi appendi
-			historyA = [...historyA.slice(0, idxA + 1), entry];
-			idxA     = historyA.length - 1;
-			evalResult = null; bestArrow = null; bestExplain = '';
-		}
+		const entry = applyMove(fenA, from, to, promo);
+		if (!entry) return;
+		historyA   = [...historyA.slice(0, idxA + 1), entry];
+		idxA       = historyA.length - 1;
+		evalResult = null; bestArrow = null; bestExplain = '';
 	}
 
 	function navA(i: number) {
@@ -371,32 +371,12 @@
 	}
 
 	function handleOpeningMove(from: string, to: string, promo?: string) {
-		const c = new Chess();
-		c.load(fenOp);
-		let entry: MoveEntry | null = null;
-
-		try {
-			const mv = c.move({ from, to, promotion: (promo ?? 'q') as any });
-			entry = { fen: c.fen(), from, to, san: mv?.san ?? `${from}-${to}` };
-		} catch {
-			const piece = c.get(from as any);
-			if (!piece) return;
-			const parts = fenOp.split(' ');
-			parts[1] = piece.color;
-			const tmp = new Chess();
-			tmp.load(parts.join(' '));
-			try {
-				const mv = tmp.move({ from, to, promotion: (promo ?? 'q') as any });
-				entry = { fen: tmp.fen(), from, to, san: mv?.san ?? `${from}-${to}` };
-			} catch { return; }
-		}
-
-		if (entry) {
-			historyOp = [...historyOp.slice(0, idxOp + 1), entry];
-			idxOp     = historyOp.length - 1;
-			evalResult = null; bestArrow = null; bestExplain = ''; theoryArrow = null;
-			_updateOpeningDetection(historyOp.slice(1).map(e => e.san));
-		}
+		const entry = applyMove(fenOp, from, to, promo);
+		if (!entry) return;
+		historyOp  = [...historyOp.slice(0, idxOp + 1), entry];
+		idxOp      = historyOp.length - 1;
+		evalResult = null; bestArrow = null; bestExplain = ''; theoryArrow = null;
+		_updateOpeningDetection(historyOp.slice(1).map(e => e.san));
 	}
 
 	function navOp(i: number) {
@@ -465,6 +445,41 @@
 	let flipped = $state(false);
 	const boardColor = $derived<'white' | 'black'>(flipped ? 'black' : 'white');
 
+	// ── NavTimeline unificata: props derivati dal mode corrente ──────────────────
+	const tlCurrent = $derived(
+		mode === 'pgn'     ? pgnIdx :
+		mode === 'opening' ? idxOp  : idxA
+	);
+	const tlTotal = $derived(
+		mode === 'pgn'     ? pgnPositions.length - 1 :
+		mode === 'opening' ? historyOp.length - 1    : historyA.length - 1
+	);
+	function tlFirst() {
+		if (mode === 'pgn') pgFirst();
+		else if (mode === 'opening') navOp(0);
+		else navA(0);
+	}
+	function tlPrev() {
+		if (mode === 'pgn') pgPrev();
+		else if (mode === 'opening') navOp(idxOp - 1);
+		else navA(idxA - 1);
+	}
+	function tlNext() {
+		if (mode === 'pgn') pgNext();
+		else if (mode === 'opening') navOp(idxOp + 1);
+		else navA(idxA + 1);
+	}
+	function tlLast() {
+		if (mode === 'pgn') pgLast();
+		else if (mode === 'opening') navOp(historyOp.length - 1);
+		else navA(historyA.length - 1);
+	}
+	function tlGoto(i: number) {
+		if (mode === 'pgn') pgnIdx = i;
+		else if (mode === 'opening') navOp(i);
+		else navA(i);
+	}
+
 	// ── Mode switch ───────────────────────────────────────────────────────────────
 	function switchMode(m: Mode) {
 		mode        = m;
@@ -517,7 +532,7 @@
 		<!-- Eval bar (colonna sinistra, solo se c'è un risultato) -->
 		<div class="eval-col">
 			{#if mode !== 'pgn'}
-				<div class="eval-bar-wrap" title="{evalScore} — {evalText()}">
+				<div class="eval-bar-wrap" title="{evalScore} — {evalText}">
 					<div class="eval-black" style="height:{100 - evalPct}%"></div>
 					<div class="eval-white" style="height:{evalPct}%">
 						<span class="eval-score-label"
@@ -573,37 +588,15 @@
 			<!-- ── Timeline navigazione (tutte le modalità tranne Setup) ── -->
 			{#if mode !== 'setup'}
 				<div class="timeline-shell">
-					{#if mode === 'free-a'}
-						<NavTimeline
-							current={idxA}
-							total={historyA.length - 1}
-							onFirst={() => navA(0)}
-							onPrev={() => navA(idxA - 1)}
-							onNext={() => navA(idxA + 1)}
-							onLast={() => navA(historyA.length - 1)}
-							onGoto={(i) => navA(i)}
-						/>
-					{:else if mode === 'pgn'}
-						<NavTimeline
-							current={pgnIdx}
-							total={pgnPositions.length - 1}
-							onFirst={pgFirst}
-							onPrev={pgPrev}
-							onNext={pgNext}
-							onLast={pgLast}
-							onGoto={(i) => { pgnIdx = i; }}
-						/>
-					{:else if mode === 'opening'}
-						<NavTimeline
-							current={idxOp}
-							total={historyOp.length - 1}
-							onFirst={() => navOp(0)}
-							onPrev={() => navOp(idxOp - 1)}
-							onNext={() => navOp(idxOp + 1)}
-							onLast={() => navOp(historyOp.length - 1)}
-							onGoto={(i) => navOp(i)}
-						/>
-					{/if}
+					<NavTimeline
+						current={tlCurrent}
+						total={tlTotal}
+						onFirst={tlFirst}
+						onPrev={tlPrev}
+						onNext={tlNext}
+						onLast={tlLast}
+						onGoto={tlGoto}
+					/>
 				</div>
 			{/if}
 		</div>
@@ -628,7 +621,7 @@
 							<span class="eval-num" class:positive={evalResult.score > 0}>
 								{evalScore}
 							</span>
-							<span class="eval-desc">{evalText()}</span>
+							<span class="eval-desc">{evalText}</span>
 						</div>
 					{/if}
 					<button class="hint-btn" onclick={() => showBestMove(fenA)}
@@ -738,7 +731,7 @@
 					{#if evalResult}
 						<div class="eval-summary">
 							<span class="eval-num" class:positive={evalResult.score > 0}>{evalScore}</span>
-							<span class="eval-desc">{evalText()}</span>
+							<span class="eval-desc">{evalText}</span>
 						</div>
 					{/if}
 					<button class="hint-btn" onclick={() => showBestMove(setupFen)}
@@ -847,7 +840,7 @@
 						{#if evalResult}
 							<div class="eval-summary">
 								<span class="eval-num" class:positive={evalResult.score > 0}>{evalScore}</span>
-								<span class="eval-desc">{evalText()}</span>
+								<span class="eval-desc">{evalText}</span>
 							</div>
 						{/if}
 						<button class="eval-btn" onclick={() => analyzePosition(fenOp)}

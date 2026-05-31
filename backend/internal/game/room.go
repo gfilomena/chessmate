@@ -454,45 +454,61 @@ func (r *Room) endGame(result, reason string) {
 }
 
 func (r *Room) updateELO(result string, ctx context.Context) {
-	// Legge IDs, time_control e ELO della categoria corretta
+	tx, err := r.pg.Pool.Begin(ctx)
+	if err != nil {
+		log.Printf("updateELO: begin tx: %v", err)
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	// Legge IDs e time_control
 	var whiteID, blackID string
 	var timeControl int
-	err := r.pg.Pool.QueryRow(ctx,
+	if err := tx.QueryRow(ctx,
 		`SELECT white_id, black_id, time_control FROM games WHERE id = $1`, r.gameID,
-	).Scan(&whiteID, &blackID, &timeControl)
-	if err != nil {
-		log.Printf("updateELO: errore lettura game: %v", err)
+	).Scan(&whiteID, &blackID, &timeControl); err != nil {
+		log.Printf("updateELO: lettura game: %v", err)
 		return
 	}
 
 	gameType := gameTypeFromTC(timeControl)
 	eloCol := eloColFromType(gameType)
 
+	// Legge ELO con FOR UPDATE — blocca righe per evitare race condition
 	var whiteElo, blackElo int
-	r.pg.Pool.QueryRow(ctx, `SELECT `+eloCol+` FROM users WHERE id = $1`, whiteID).Scan(&whiteElo)
-	r.pg.Pool.QueryRow(ctx, `SELECT `+eloCol+` FROM users WHERE id = $1`, blackID).Scan(&blackElo)
+	tx.QueryRow(ctx,
+		`SELECT `+eloCol+` FROM users WHERE id = $1 FOR UPDATE`, whiteID,
+	).Scan(&whiteElo)
+	tx.QueryRow(ctx,
+		`SELECT `+eloCol+` FROM users WHERE id = $1 FOR UPDATE`, blackID,
+	).Scan(&blackElo)
 
 	// Numero di partite già giocate (per K-factor provvisorio)
 	var whiteGames, blackGames int
-	r.pg.Pool.QueryRow(ctx,
+	tx.QueryRow(ctx,
 		`SELECT COUNT(*) FROM elo_history WHERE user_id = $1 AND game_type = $2`,
 		whiteID, gameType,
 	).Scan(&whiteGames)
-	r.pg.Pool.QueryRow(ctx,
+	tx.QueryRow(ctx,
 		`SELECT COUNT(*) FROM elo_history WHERE user_id = $1 AND game_type = $2`,
 		blackID, gameType,
 	).Scan(&blackGames)
 
 	newWhiteElo, newBlackElo := calculateELO(whiteElo, blackElo, whiteGames, blackGames, result)
 
-	r.pg.Pool.Exec(ctx, `UPDATE users SET `+eloCol+`=$1 WHERE id=$2`, newWhiteElo, whiteID)
-	r.pg.Pool.Exec(ctx, `UPDATE users SET `+eloCol+`=$1 WHERE id=$2`, newBlackElo, blackID)
-	r.pg.Pool.Exec(ctx,
+	tx.Exec(ctx, `UPDATE users SET `+eloCol+`=$1 WHERE id=$2`, newWhiteElo, whiteID)
+	tx.Exec(ctx, `UPDATE users SET `+eloCol+`=$1 WHERE id=$2`, newBlackElo, blackID)
+	tx.Exec(ctx,
 		`INSERT INTO elo_history (user_id, game_id, game_type, elo_before, elo_after)
 		 VALUES ($1,$2,$3,$4,$5),($6,$2,$3,$7,$8)`,
 		whiteID, r.gameID, gameType, whiteElo, newWhiteElo,
 		blackID, blackElo, newBlackElo,
 	)
+
+	if err := tx.Commit(ctx); err != nil {
+		log.Printf("updateELO: commit: %v", err)
+		return
+	}
 
 	log.Printf("ELO [%s] — bianco %d→%d (K=%d) | nero %d→%d (K=%d)",
 		gameType,

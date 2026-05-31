@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"chess-clone/backend/internal/db"
@@ -22,7 +23,13 @@ func NewAuthHandler(pg *db.Postgres, cfg *AdminConfig, mailer *Mailer) *AuthHand
 	return &AuthHandler{pg: pg, cfg: cfg, mailer: mailer}
 }
 
-var jwtSecret = []byte("change_me_in_production")
+var jwtSecret = func() []byte {
+	s := os.Getenv("JWT_SECRET")
+	if s == "" {
+		log.Fatal("JWT_SECRET non impostato — impossibile avviare il server")
+	}
+	return []byte(s)
+}()
 
 const (
 	sessionDuration = 30 * 24 * time.Hour          // durata JWT
@@ -352,7 +359,7 @@ func setAuthCookie(w http.ResponseWriter, token string) {
 		Name:     "auth_token",
 		Value:    token,
 		HttpOnly: true,
-		Secure:   false, // true in produzione
+		Secure:   os.Getenv("APP_ENV") == "production",
 		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
 		MaxAge:   sessionMaxAge,
