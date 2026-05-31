@@ -2,7 +2,8 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
 	import { Chess } from 'chess.js';
-	import Board from '$lib/chess/Board.svelte';
+	import Board       from '$lib/chess/Board.svelte';
+	import NavTimeline from '$lib/chess/NavTimeline.svelte';
 	import { StockfishEngine, evalToPercent, formatScore, classifyMove, type AnalysisResult, type MoveClassification } from '$lib/chess/stockfish';
 	import { API_URL as API } from '$lib/config';
 	import { t } from '$lib/i18n';
@@ -306,11 +307,16 @@
 
 		<!-- Navigazione -->
 		<div class="nav-controls">
-			<button onclick={goFirst} title="Prima mossa">⏮</button>
-			<button onclick={goPrev}  title="Mossa precedente (←)">◀</button>
-			<span class="move-counter">{currentIdx} / {positions.length - 1}</span>
-			<button onclick={goNext}  title="Mossa successiva (→)">▶</button>
-			<button onclick={goLast}  title="Ultima mossa">⏭</button>
+			<NavTimeline
+				current={currentIdx}
+				total={positions.length - 1}
+				showTrack={false}
+				onFirst={goFirst}
+				onPrev={goPrev}
+				onNext={goNext}
+				onLast={goLast}
+				onGoto={goTo}
+			/>
 		</div>
 	</div>
 
@@ -508,29 +514,11 @@
 	.white-tag  { background: #4a5568; }
 	.result-tag { color: var(--accent); font-weight: 700; }
 
-	/* Navigation */
+	/* Navigation — pulsanti e counter ora in NavTimeline */
 	.nav-controls {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.5rem;
-	}
-	.nav-controls button {
-		background: var(--bg-card);
-		border: 1px solid var(--border);
-		color: var(--text);
-		border-radius: 6px;
-		padding: 0.4rem 0.8rem;
-		font-size: 1rem;
-		cursor: pointer;
-		transition: border-color 0.2s;
-	}
-	.nav-controls button:hover { border-color: var(--accent); }
-	.move-counter {
-		color: var(--text-muted);
-		font-size: 0.85rem;
-		min-width: 60px;
-		text-align: center;
 	}
 
 	/* ── Engine info (live) — in moves-col, full width ── */

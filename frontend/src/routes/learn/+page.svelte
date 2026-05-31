@@ -4,6 +4,7 @@
 	import { browser }            from '$app/environment';
 	import Board                  from '$lib/chess/Board.svelte';
 	import SetupBoard             from '$lib/chess/SetupBoard.svelte';
+	import NavTimeline            from '$lib/chess/NavTimeline.svelte';
 	import { PIECE_SVG, type PieceCode } from '$lib/chess/pieces';
 	import { StockfishEngine, evalToPercent, formatScore } from '$lib/chess/stockfish';
 	import { OPENINGS, detectOpening, openingStartFen, nextTheoreticalMoves, type Opening } from '$lib/chess/openings';
@@ -571,31 +572,38 @@
 
 			<!-- ── Timeline navigazione (tutte le modalità tranne Setup) ── -->
 			{#if mode !== 'setup'}
-				{@const total   = mode === 'free-a' ? historyA.length - 1
-				                : mode === 'pgn'    ? pgnPositions.length - 1
-				                :                    historyOp.length - 1}
-				{@const current = mode === 'free-a' ? idxA
-				                : mode === 'pgn'    ? pgnIdx
-				                :                    idxOp}
-				<div class="timeline-bar">
-					<button class="tl-btn" onclick={() => mode==='free-a' ? navA(0)       : mode==='pgn' ? pgFirst() : navOp(0)}       disabled={current===0} title="Prima mossa">⏮</button>
-					<button class="tl-btn" onclick={() => mode==='free-a' ? navA(idxA-1)  : mode==='pgn' ? pgPrev()  : navOp(idxOp-1)} disabled={current===0} title="← Precedente">◀</button>
-
-					<!-- Track cliccabile -->
-					<div class="tl-track" onclick={(e) => {
-						const pct = e.offsetX / (e.currentTarget as HTMLElement).offsetWidth;
-						const idx = Math.round(pct * total);
-						if (mode==='free-a') navA(idx);
-						else if (mode==='pgn') pgnIdx = idx;
-						else navOp(idx);
-					}}>
-						<div class="tl-fill" style="width:{total > 0 ? (current/total)*100 : 0}%"></div>
-						<div class="tl-thumb" style="left:{total > 0 ? (current/total)*100 : 0}%"></div>
-					</div>
-
-					<span class="tl-counter">{current}<span class="tl-sep">/</span>{total}</span>
-					<button class="tl-btn" onclick={() => mode==='free-a' ? navA(idxA+1)           : mode==='pgn' ? pgNext()  : navOp(idxOp+1)}          disabled={current===total} title="Successiva →">▶</button>
-					<button class="tl-btn" onclick={() => mode==='free-a' ? navA(historyA.length-1): mode==='pgn' ? pgLast()  : navOp(historyOp.length-1)} disabled={current===total} title="Ultima mossa">⏭</button>
+				<div class="timeline-shell">
+					{#if mode === 'free-a'}
+						<NavTimeline
+							current={idxA}
+							total={historyA.length - 1}
+							onFirst={() => navA(0)}
+							onPrev={() => navA(idxA - 1)}
+							onNext={() => navA(idxA + 1)}
+							onLast={() => navA(historyA.length - 1)}
+							onGoto={(i) => navA(i)}
+						/>
+					{:else if mode === 'pgn'}
+						<NavTimeline
+							current={pgnIdx}
+							total={pgnPositions.length - 1}
+							onFirst={pgFirst}
+							onPrev={pgPrev}
+							onNext={pgNext}
+							onLast={pgLast}
+							onGoto={(i) => { pgnIdx = i; }}
+						/>
+					{:else if mode === 'opening'}
+						<NavTimeline
+							current={idxOp}
+							total={historyOp.length - 1}
+							onFirst={() => navOp(0)}
+							onPrev={() => navOp(idxOp - 1)}
+							onNext={() => navOp(idxOp + 1)}
+							onLast={() => navOp(historyOp.length - 1)}
+							onGoto={(i) => navOp(i)}
+						/>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -994,11 +1002,8 @@
 		aspect-ratio: 1;
 	}
 
-	/* ── Timeline ── */
-	.timeline-bar {
-		display: flex;
-		align-items: center;
-		gap: 0.3rem;
+	/* ── Timeline shell (styling del contenitore, logica nel componente) ── */
+	.timeline-shell {
 		width: 100%;
 		max-width: min(calc(100% - 0px), calc(100vh - 200px));
 		background: var(--bg-card);
@@ -1007,58 +1012,6 @@
 		padding: 0.35rem 0.5rem;
 		flex-shrink: 0;
 	}
-	.tl-btn {
-		background: none;
-		border: none;
-		color: var(--text-muted);
-		font-size: 0.9rem;
-		cursor: pointer;
-		padding: 0.1rem 0.3rem;
-		border-radius: 4px;
-		line-height: 1;
-		transition: color 0.15s, background 0.1s;
-		flex-shrink: 0;
-	}
-	.tl-btn:hover:not(:disabled) { color: var(--text); background: rgba(255,255,255,0.07); }
-	.tl-btn:disabled { opacity: 0.3; cursor: default; }
-
-	.tl-track {
-		flex: 1;
-		height: 5px;
-		background: var(--border);
-		border-radius: 3px;
-		cursor: pointer;
-		position: relative;
-		overflow: visible;
-	}
-	.tl-fill {
-		height: 100%;
-		background: var(--accent);
-		border-radius: 3px;
-		transition: width 0.12s ease;
-		pointer-events: none;
-	}
-	.tl-thumb {
-		position: absolute;
-		top: 50%;
-		transform: translate(-50%, -50%);
-		width: 11px;
-		height: 11px;
-		border-radius: 50%;
-		background: var(--accent);
-		border: 2px solid var(--bg-card);
-		transition: left 0.12s ease;
-		pointer-events: none;
-	}
-	.tl-counter {
-		font-size: 0.68rem;
-		font-family: monospace;
-		color: var(--text-muted);
-		min-width: 36px;
-		text-align: center;
-		flex-shrink: 0;
-	}
-	.tl-sep { opacity: 0.4; margin: 0 1px; }
 
 	/* ── Panel col ── */
 	.panel-col {

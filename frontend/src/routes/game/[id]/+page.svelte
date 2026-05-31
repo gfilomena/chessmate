@@ -2,7 +2,8 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
 	import { Chess } from 'chess.js';
-	import Board from '$lib/chess/Board.svelte';
+	import Board       from '$lib/chess/Board.svelte';
+	import NavTimeline from '$lib/chess/NavTimeline.svelte';
 	import Timer from '$lib/chess/Timer.svelte';
 	import { gameState, resetGame } from '$lib/stores/game';
 	import { connectToGame, sendMove, sendResign, sendOfferDraw, sendDrawResponse, sendFlag, disconnect } from '$lib/ws/socket';
@@ -251,18 +252,17 @@
 
 		<!-- Nav bar timeline (solo mobile) -->
 		<div class="mobile-nav-bar">
-			<button class="nav-btn" onclick={navFirst} disabled={atStart} title={$t.common.first_move}>⏮</button>
-			<button class="nav-btn" onclick={navPrev}  disabled={atStart} title={$t.common.prev_move}>◀</button>
-			<div class="nav-timeline">
-				<div class="timeline-track">
-					<div class="timeline-fill" style="width:{timelinePercent}%">
-						<span class="timeline-thumb"></span>
-					</div>
-				</div>
-				<span class="timeline-label" class:live={!isReviewing}>{navLabel}</span>
-			</div>
-			<button class="nav-btn" onclick={navNext}  disabled={atEnd} title={$t.common.next_move}>▶</button>
-			<button class="nav-btn" onclick={navLast}  disabled={atEnd} title={$t.common.last_move}>⏭</button>
+			<NavTimeline
+				current={viewIndex ?? history.length - 1}
+				total={history.length - 1}
+				label={navLabel}
+				showTrack={true}
+				onFirst={navFirst}
+				onPrev={navPrev}
+				onNext={navNext}
+				onLast={navLast}
+				onGoto={navTo}
+			/>
 		</div>
 
 		<!-- Giocatore (in basso) -->
@@ -351,11 +351,16 @@
 
 		<!-- Navigazione mosse -->
 		<div class="nav-row" class:reviewing={isReviewing}>
-			<button class="nav-btn" onclick={navFirst} disabled={atStart} title={$t.common.first_move}>⏮</button>
-			<button class="nav-btn" onclick={navPrev}  disabled={atStart} title={$t.common.prev_move}>◀</button>
-			<span class="nav-label" class:live={!isReviewing}>{navLabel}</span>
-			<button class="nav-btn" onclick={navNext}  disabled={atEnd}   title={$t.common.next_move}>▶</button>
-			<button class="nav-btn" onclick={navLast}  disabled={atEnd}   title={$t.common.last_move}>⏭</button>
+			<NavTimeline
+				current={viewIndex ?? history.length - 1}
+				total={history.length - 1}
+				label={navLabel}
+				showTrack={false}
+				onFirst={navFirst}
+				onPrev={navPrev}
+				onNext={navNext}
+				onLast={navLast}
+			/>
 		</div>
 
 		<!-- Status partita -->
@@ -560,38 +565,7 @@
 	.nav-row.reviewing {
 		border-color: var(--accent);
 	}
-	.nav-btn {
-		background: none;
-		border: none;
-		color: var(--text-muted);
-		font-size: 0.78rem;
-		padding: 0.3rem 0.45rem;
-		cursor: pointer;
-		border-radius: 5px;
-		transition: background 0.12s, color 0.12s;
-		line-height: 1;
-		flex-shrink: 0;
-	}
-	.nav-btn:hover:not(:disabled) {
-		background: rgba(255,255,255,0.08);
-		color: var(--text);
-	}
-	.nav-btn:disabled {
-		opacity: 0.3;
-		cursor: default;
-	}
-	.nav-label {
-		flex: 1;
-		text-align: center;
-		font-size: 0.72rem;
-		font-weight: 600;
-		color: var(--text-muted);
-		letter-spacing: 0.02em;
-		white-space: nowrap;
-	}
-	.nav-label.live {
-		color: #e05050;
-	}
+	/* nav-btn e nav-label ora nel componente NavTimeline */
 
 	/* ═══════════════════════════════════════════════════════════
 	   MOBILE (≤ 768px)
@@ -784,50 +758,7 @@
 			padding: 0.4rem 0.5rem;
 			flex-shrink: 0;
 		}
-		.mobile-nav-bar .nav-btn {
-			font-size: 0.75rem;
-			padding: 0.3rem 0.4rem;
-		}
-
-		.nav-timeline {
-			flex: 1;
-			display: flex;
-			align-items: center;   /* track allineato verticalmente con i bottoni */
-			min-width: 0;
-		}
-		/* Track cresce per riempire nav-timeline */
-		.timeline-track {
-			flex: 1;
-			position: relative;
-			height: 5px;
-			background: var(--border);
-			border-radius: 3px;
-			overflow: visible;     /* il thumb non viene ritagliato */
-		}
-		/* Il label è ridondante: la strip dei chip mostra già la posizione */
-		.timeline-label {
-			display: none;
-		}
-		.timeline-fill {
-			position: relative;
-			height: 100%;
-			background: var(--accent);
-			border-radius: 3px;
-			transition: width 0.15s ease;
-			min-width: 6px;
-		}
-		.timeline-thumb {
-			position: absolute;
-			right: 0;
-			top: 50%;
-			transform: translate(50%, -50%);
-			width: 11px;
-			height: 11px;
-			background: var(--accent);
-			border-radius: 50%;
-			border: 2px solid var(--bg-card);
-			box-shadow: 0 0 0 1px var(--accent);
-		}
+		/* Track e thumb ora nel componente NavTimeline — nessuna duplicazione */
 		/* Nascondi nav-row nel side-col su mobile (già nella mobile-nav-bar) */
 		.side-col .nav-row { display: none; }
 	}
