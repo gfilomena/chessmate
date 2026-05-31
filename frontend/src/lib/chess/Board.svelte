@@ -9,7 +9,8 @@
 		lastMove,
 		onMove,
 		arrows = [],
-		squareBadge = null
+		squareBadge = null,
+		freePlay = false   // ignora il turno: entrambi i colori sono mossi liberamente
 	}: {
 		fen: string;
 		playerColor: 'white' | 'black';
@@ -18,6 +19,7 @@
 		onMove: (from: string, to: string, promotion?: string) => void;
 		arrows?: { from: string; to: string; color?: string }[];
 		squareBadge?: { square: string; symbol: string; color: string } | null;
+		freePlay?: boolean;
 	} = $props();
 
 	// ── Arrow helpers ──────────────────────────────────────────────
@@ -119,6 +121,28 @@
 	function isLegal(s: string)  { return legalTargets.includes(s); }
 	function isLast(s: string)   { return lastMove?.from === s || lastMove?.to === s; }
 
+	// ── Helper: legal targets per un pezzo (gestisce freePlay) ───
+	// In freePlay, se il pezzo è del colore "sbagliato" creiamo un'istanza
+	// chess con il turno invertito per calcolare le mosse legali.
+	function computeLegalTargets(square: string): string[] {
+		const piece = chess().get(square as any);
+		if (!piece) return [];
+
+		// Normale: usa l'istanza corrente
+		let targets = chess().moves({ square: square as any, verbose: true }).map((m: any) => m.to);
+		if (targets.length > 0 || !freePlay) return targets;
+
+		// freePlay: il pezzo è del colore "non di turno" → invertiamo il turno nel FEN
+		try {
+			const parts = chess().fen().split(' ');
+			parts[1] = piece.color;             // setta il turno al colore del pezzo
+			const temp = new Chess();
+			temp.load(parts.join(' '));
+			targets = temp.moves({ square: square as any, verbose: true }).map((m: any) => m.to);
+		} catch {}
+		return targets;
+	}
+
 	// ── Tap (click-to-move) ───────────────────────────────────────
 	// Called from onPtrUp on pure taps — works for both mouse and touch.
 	// No synthetic `click` event is used, avoiding Android timing issues.
@@ -128,9 +152,10 @@
 		if (selectedSquare === null) {
 			const piece = chess().get(square as any);
 			const myColor = playerColor === 'white' ? 'w' : 'b';
-			if (!piece || piece.color !== myColor) return;
+			// freePlay: qualsiasi pezzo è selezionabile; normale: solo il proprio
+			if (!piece || (!freePlay && piece.color !== myColor)) return;
 			selectedSquare = square;
-			legalTargets   = chess().moves({ square: square as any, verbose: true }).map((m: any) => m.to);
+			legalTargets   = computeLegalTargets(square);
 		} else {
 			if (legalTargets.includes(square)) {
 				tryMove(selectedSquare, square);
@@ -152,7 +177,8 @@
 
 		const piece   = chess().get(square as any);
 		const myColor = playerColor === 'white' ? 'w' : 'b';
-		const isOwn   = !!(piece && piece.color === myColor);
+		// freePlay: qualsiasi pezzo è draggabile; normale: solo il proprio
+		const isOwn   = !!(piece && (freePlay || piece.color === myColor));
 
 		// Record tap origin
 		ptrDownSquare = square;
@@ -161,7 +187,7 @@
 		dragX         = e.clientX;
 		dragY         = e.clientY;
 
-		// Prepare ghost only for own pieces (drag candidates)
+		// Prepare ghost only for own/free pieces (drag candidates)
 		if (isOwn && svg) {
 			dragSvg = svg;
 			if (boardEl) squareSize = boardEl.getBoundingClientRect().width / 8;
@@ -179,9 +205,7 @@
 					isDragActive   = true;
 					dragFrom       = ptrDownSquare;
 					selectedSquare = ptrDownSquare;
-					legalTargets   = chess()
-						.moves({ square: ptrDownSquare as any, verbose: true })
-						.map((m: any) => m.to);
+					legalTargets   = computeLegalTargets(ptrDownSquare!);
 				}
 			}
 		}
