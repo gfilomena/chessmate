@@ -991,14 +991,14 @@
 	}
 	.board-wrap {
 		width: 100%;
-		max-width: min(calc(100% - 0px), calc(100vh - 200px));
+		max-width: min(calc(100% - 0px), calc(100vh - 250px));
 		aspect-ratio: 1;
 	}
 
 	/* ── Timeline shell (styling del contenitore, logica nel componente) ── */
 	.timeline-shell {
 		width: 100%;
-		max-width: min(calc(100% - 0px), calc(100vh - 200px));
+		max-width: min(calc(100% - 0px), calc(100vh - 250px));
 		background: var(--bg-card);
 		border: 1px solid var(--border);
 		border-radius: 8px;
