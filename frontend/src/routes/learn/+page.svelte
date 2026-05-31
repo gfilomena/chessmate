@@ -461,6 +461,10 @@
 		if (e.key === 'ArrowDown')  { e.preventDefault(); pgLast(); }
 	}
 
+	// ── Flip board ───────────────────────────────────────────────────────────────
+	let flipped = $state(false);
+	const boardColor = $derived<'white' | 'black'>(flipped ? 'black' : 'white');
+
 	// ── Mode switch ───────────────────────────────────────────────────────────────
 	function switchMode(m: Mode) {
 		mode        = m;
@@ -495,6 +499,13 @@
 				📚 Apertura
 			</button>
 		</div>
+		<button
+			class="flip-btn"
+			class:flipped
+			onclick={() => flipped = !flipped}
+			title="Ruota scacchiera"
+		>⇅</button>
+
 		<span class="engine-status" class:ready={engineReady}>
 			{engineReady ? '⚙ Stockfish pronto' : '⚙ Caricamento motore…'}
 		</span>
@@ -524,7 +535,7 @@
 				{#if mode === 'free-a'}
 					<Board
 						fen={fenA}
-						playerColor="white"
+						playerColor={boardColor}
 						isMyTurn={true}
 						freePlay={true}
 						lastMove={lastMoveA}
@@ -541,7 +552,7 @@
 				{:else if mode === 'pgn'}
 					<Board
 						fen={pgnPositions[pgnIdx]?.fen ?? INITIAL_FEN}
-						playerColor="white"
+						playerColor={boardColor}
 						isMyTurn={false}
 						lastMove={pgnLastMove as any}
 						onMove={() => {}}
@@ -549,7 +560,7 @@
 				{:else if mode === 'opening'}
 					<Board
 						fen={fenOp}
-						playerColor="white"
+						playerColor={boardColor}
 						isMyTurn={true}
 						freePlay={true}
 						lastMove={lastMoveOp}
@@ -868,6 +879,22 @@
 	}
 	.mode-tab:hover { color: var(--text); }
 	.mode-tab.active { background: var(--accent); color: #000; }
+
+	/* ── Flip button ── */
+	.flip-btn {
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 7px;
+		color: var(--text-muted);
+		font-size: 1.1rem;
+		width: 34px; height: 34px;
+		display: flex; align-items: center; justify-content: center;
+		cursor: pointer;
+		transition: border-color 0.15s, color 0.15s, transform 0.2s;
+		flex-shrink: 0;
+	}
+	.flip-btn:hover { border-color: var(--accent); color: var(--text); }
+	.flip-btn.flipped { transform: rotate(180deg); border-color: var(--accent); color: var(--accent); }
 
 	.engine-status {
 		font-size: 0.72rem;
