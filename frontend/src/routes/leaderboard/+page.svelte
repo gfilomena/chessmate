@@ -20,7 +20,8 @@
 		try {
 			const res = await fetch(`${API_URL}/api/leaderboard`, { credentials: 'include' });
 			if (!res.ok) throw new Error('server error');
-			entries = await res.json();
+			const json = await res.json();
+			entries = json.data ?? [];
 		} catch {
 			error = 'err';
 		} finally {
@@ -109,15 +110,8 @@
 	overflow: hidden;
 }
 
-.header { flex-shrink: 0; }
-
-.table-wrap {
-	flex: 1;
-	min-height: 0;
-	overflow-y: auto;
-}
-
 .header {
+	flex-shrink: 0;
 	text-align: center;
 }
 .header h1 {
@@ -140,10 +134,12 @@
 
 /* ── Table ── */
 .table-wrap {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
 	background: var(--bg-card);
 	border: 1px solid var(--border);
 	border-radius: 12px;
-	overflow: hidden;
 }
 
 table {
