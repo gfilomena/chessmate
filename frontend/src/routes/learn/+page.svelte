@@ -194,7 +194,60 @@
 
 	let setupBoard    = $state<Record<string, string>>({ ...INITIAL_BOARD });
 	let setupTurn     = $state<'w' | 'b'>('w');
-	let selectedPiece = $state<string | null>(null); // pezzo dalla palette
+	let selectedPiece = $state<string | null>(null); // pezzo selezionato dalla palette
+
+	// Drag dalla palette verso la scacchiera
+	let paletteDragging  = $state(false);
+	let paletteDragPiece = $state<string | null>(null);
+	let paletteDragX     = $state(0);
+	let paletteDragY     = $state(0);
+
+	function onPalettePointerDown(e: PointerEvent, code: string) {
+		if (e.pointerType === 'touch') e.preventDefault();
+		const startX = e.clientX;
+		const startY = e.clientY;
+		paletteDragPiece = code;
+		paletteDragX     = e.clientX;
+		paletteDragY     = e.clientY;
+
+		function onMove(me: PointerEvent) {
+			paletteDragX = me.clientX;
+			paletteDragY = me.clientY;
+			const dx = me.clientX - startX;
+			const dy = me.clientY - startY;
+			if (!paletteDragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+				paletteDragging  = true;
+				selectedPiece    = code;   // seleziona anche come pezzo attivo
+				document.body.style.cursor = 'grabbing';
+			}
+		}
+
+		function onUp(ue: PointerEvent) {
+			document.removeEventListener('pointermove', onMove);
+			document.removeEventListener('pointerup',   onUp);
+			document.body.style.cursor = '';
+
+			if (paletteDragging) {
+				// Cerca la casella della scacchiera sotto il cursore
+				const els = document.elementsFromPoint(ue.clientX, ue.clientY);
+				const sqEl = els.find(el => el.hasAttribute('data-sq')) as HTMLElement | null;
+				if (sqEl?.dataset.sq) {
+					const updated = { ...setupBoard, [sqEl.dataset.sq]: code };
+					onSetupBoardChange(updated);
+					selectedPiece = null; // dopo drop, deseleziona
+				}
+				paletteDragging  = false;
+				paletteDragPiece = null;
+			} else {
+				// Click semplice → seleziona/deseleziona
+				selectedPiece = selectedPiece === code ? null : code;
+				paletteDragPiece = null;
+			}
+		}
+
+		document.addEventListener('pointermove', onMove);
+		document.addEventListener('pointerup',   onUp);
+	}
 
 	// Palette per aggiungere pezzi
 	const PALETTE_W: PieceCode[] = ['wK','wQ','wR','wB','wN','wP'];
@@ -472,7 +525,9 @@
 				{:else if mode === 'setup'}
 					<SetupBoard
 						board={setupBoard}
+						activePalettePiece={selectedPiece}
 						onBoardChange={onSetupBoardChange}
+						onPiecePlaced={() => { /* mantieni selezionato per piazzamenti multipli */ }}
 					/>
 				{:else if mode === 'pgn'}
 					<Board
@@ -556,29 +611,58 @@
 
 			<!-- ── SETUP ──────────────────────────────────────────── -->
 			{:else if mode === 'setup'}
-				<div class="panel-card">
+				<div class="panel-card palette-card">
 					<p class="panel-label">Palette pezzi</p>
-					<p class="panel-hint" style="font-size:0.75rem">Clicca un pezzo e poi la casella dove posizionarlo. Tasto destro su un pezzo per rimuoverlo.</p>
-					<div class="palette">
+					<p class="panel-hint">
+						{#if selectedPiece}
+							<strong style="color:var(--accent)">Pezzo selezionato — clicca una casella o trascinalo sulla scacchiera</strong>
+						{:else}
+							Clicca o trascina un pezzo sulla scacchiera. <br/>Tasto destro per rimuovere.
+						{/if}
+					</p>
+
+					<!-- Pezzi bianchi -->
+					<div class="palette-section">
+						<span class="palette-color-label">⬜ Bianchi</span>
 						<div class="palette-row">
 							{#each PALETTE_W as code}
-								<button class="palette-btn" class:selected-piece={selectedPiece === code}
-									onclick={() => selectedPiece = selectedPiece === code ? null : code}>
-									{@html PIECE_SVG[code]}
-								</button>
-							{/each}
-						</div>
-						<div class="palette-row">
-							{#each PALETTE_B as code}
-								<button class="palette-btn" class:selected-piece={selectedPiece === code}
-									onclick={() => selectedPiece = selectedPiece === code ? null : code}>
+								<button
+									class="palette-btn"
+									class:active={selectedPiece === code}
+									onpointerdown={(e) => onPalettePointerDown(e, code)}
+									title={code}
+								>
 									{@html PIECE_SVG[code]}
 								</button>
 							{/each}
 						</div>
 					</div>
+
+					<!-- Pezzi neri -->
+					<div class="palette-section">
+						<span class="palette-color-label">⬛ Neri</span>
+						<div class="palette-row">
+							{#each PALETTE_B as code}
+								<button
+									class="palette-btn"
+									class:active={selectedPiece === code}
+									onpointerdown={(e) => onPalettePointerDown(e, code)}
+									title={code}
+								>
+									{@html PIECE_SVG[code]}
+								</button>
+							{/each}
+						</div>
+					</div>
+
+					{#if selectedPiece}
+						<button class="deselect-btn" onclick={() => selectedPiece = null}>
+							✕ Deseleziona
+						</button>
+					{/if}
+
 					<div class="setup-turn-row">
-						<span class="panel-label" style="margin:0">Muove:</span>
+						<span class="palette-color-label" style="margin:0">Muove:</span>
 						<label class="radio-opt">
 							<input type="radio" bind:group={setupTurn} value="w" /> ⬜ Bianco
 						</label>
@@ -586,6 +670,7 @@
 							<input type="radio" bind:group={setupTurn} value="b" /> ⬛ Nero
 						</label>
 					</div>
+
 					<div class="free-actions">
 						<button class="action-btn" onclick={clearSetup}>🗑 Svuota</button>
 						<button class="action-btn danger" onclick={resetSetup}>↺ Reset</button>
@@ -723,6 +808,16 @@
 		</div><!-- /panel-col -->
 	</div><!-- /learn-layout -->
 </div>
+
+<!-- Ghost globale per drag dalla palette -->
+{#if paletteDragging && paletteDragPiece}
+	<div
+		class="palette-drag-ghost"
+		style="left:{paletteDragX - 36}px; top:{paletteDragY - 36}px"
+	>
+		{@html PIECE_SVG[paletteDragPiece as PieceCode] ?? ''}
+	</div>
+{/if}
 
 <style>
 	/* ── Page ── */
@@ -970,24 +1065,62 @@
 	.san-chip { font-size: 0.78rem; font-family: monospace; color: var(--text); padding: 0.1rem 0.2rem; border-radius: 3px; background: rgba(255,255,255,0.05); }
 
 	/* ── Palette (Setup) ── */
-	.palette { display: flex; flex-direction: column; gap: 0.3rem; }
-	.palette-row { display: flex; gap: 0.25rem; }
+	.palette-card { gap: 0.7rem; }
+	.palette-section { display: flex; flex-direction: column; gap: 0.35rem; }
+	.palette-color-label {
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--text-muted);
+		font-weight: 600;
+	}
+	.palette-row { display: flex; gap: 0.3rem; flex-wrap: wrap; }
 	.palette-btn {
-		width: 36px; height: 36px;
+		width: 48px; height: 48px;
 		background: var(--bg-input);
-		border: 1.5px solid var(--border);
-		border-radius: 6px;
-		cursor: pointer;
+		border: 2px solid var(--border);
+		border-radius: 8px;
+		cursor: grab;
 		display: flex; align-items: center; justify-content: center;
-		padding: 2px;
+		padding: 3px;
+		transition: border-color 0.15s, background 0.15s, transform 0.1s;
+		touch-action: none;
+	}
+	.palette-btn :global(svg) { width: 38px; height: 38px; pointer-events: none; }
+	.palette-btn:hover { border-color: var(--accent); transform: scale(1.08); }
+	.palette-btn.active {
+		border-color: var(--accent);
+		background: rgba(129,182,76,0.18);
+		box-shadow: 0 0 0 3px rgba(129,182,76,0.25);
+		transform: scale(1.05);
+	}
+	.palette-btn:active { cursor: grabbing; }
+	.deselect-btn {
+		align-self: flex-start;
+		background: none;
+		border: 1px solid var(--border);
+		color: var(--text-muted);
+		font-size: 0.75rem;
+		padding: 0.25rem 0.6rem;
+		border-radius: 5px;
+		cursor: pointer;
 		transition: border-color 0.15s;
 	}
-	.palette-btn :global(svg) { width: 28px; height: 28px; }
-	.palette-btn:hover { border-color: var(--accent); }
-	.palette-btn.selected-piece { border-color: var(--accent); background: rgba(129,182,76,0.15); }
+	.deselect-btn:hover { border-color: var(--accent); color: var(--text); }
 	.setup-turn-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 	.radio-opt { font-size: 0.82rem; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
 	.radio-opt input { accent-color: var(--accent); }
+
+	/* Ghost drag globale dalla palette */
+	:global(.palette-drag-ghost) {
+		position: fixed;
+		width: 72px; height: 72px;
+		pointer-events: none;
+		z-index: 10000;
+		filter: drop-shadow(0 6px 16px rgba(0,0,0,0.55));
+		transform: scale(1.2);
+	}
+	:global(.palette-drag-ghost) :global(svg) { width: 100%; height: 100%; }
 
 	/* ── PGN ── */
 	.pgn-textarea {
