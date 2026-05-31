@@ -405,7 +405,7 @@
 		position: relative;
 		/* 720px max per sfruttare schermi più alti; 90px di overhead:
 		   2 × player-row(~34px) + 2 × gap(~5px) + 2 × padding(~6px) */
-		width: min(720px, calc(100dvh - 90px), calc(100vw - 480px));
+		width: min(100%, 720px, calc(100dvh - 90px), calc(100vw - 480px));
 		aspect-ratio: 1 / 1;
 	}
 
