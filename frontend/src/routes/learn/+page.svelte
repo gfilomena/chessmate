@@ -3,6 +3,7 @@
 	import { Chess }              from 'chess.js';
 	import { browser }            from '$app/environment';
 	import Board                  from '$lib/chess/Board.svelte';
+	import NavTimeline            from '$lib/chess/NavTimeline.svelte';
 	import SetupBoard             from '$lib/chess/SetupBoard.svelte';
 	import { PIECE_SVG, type PieceCode } from '$lib/chess/pieces';
 	import { StockfishEngine, evalToPercent, formatScore } from '$lib/chess/stockfish';
@@ -444,6 +445,41 @@
 	let flipped = $state(false);
 	const boardColor = $derived<'white' | 'black'>(flipped ? 'black' : 'white');
 
+	// ── NavTimeline: props derivati dal mode corrente ────────────────────────────
+	const tlCurrent = $derived(
+		mode === 'pgn'     ? pgnIdx :
+		mode === 'opening' ? idxOp  : idxA
+	);
+	const tlTotal = $derived(
+		mode === 'pgn'     ? pgnPositions.length - 1 :
+		mode === 'opening' ? historyOp.length - 1    : historyA.length - 1
+	);
+	function tlFirst() {
+		if (mode === 'pgn') pgFirst();
+		else if (mode === 'opening') navOp(0);
+		else navA(0);
+	}
+	function tlPrev() {
+		if (mode === 'pgn') pgPrev();
+		else if (mode === 'opening') navOp(idxOp - 1);
+		else navA(idxA - 1);
+	}
+	function tlNext() {
+		if (mode === 'pgn') pgNext();
+		else if (mode === 'opening') navOp(idxOp + 1);
+		else navA(idxA + 1);
+	}
+	function tlLast() {
+		if (mode === 'pgn') pgLast();
+		else if (mode === 'opening') navOp(historyOp.length - 1);
+		else navA(historyA.length - 1);
+	}
+	function tlGoto(i: number) {
+		if (mode === 'pgn') pgnIdx = i;
+		else if (mode === 'opening') navOp(i);
+		else navA(i);
+	}
+
 	// ── Mode switch ───────────────────────────────────────────────────────────────
 	function switchMode(m: Mode) {
 		mode        = m;
@@ -553,6 +589,22 @@
 
 		<!-- Pannello laterale -->
 		<div class="panel-col">
+
+			<!-- Navigazione mosse (tutte le modalità tranne Setup) -->
+			{#if mode !== 'setup'}
+				<div class="nav-row">
+					<NavTimeline
+						current={tlCurrent}
+						total={tlTotal}
+						showTrack={true}
+						onFirst={tlFirst}
+						onPrev={tlPrev}
+						onNext={tlNext}
+						onLast={tlLast}
+						onGoto={tlGoto}
+					/>
+				</div>
+			{/if}
 
 			<!-- ── LIBERO A ─────────────────────────────────────── -->
 			{#if mode === 'free-a'}
@@ -953,6 +1005,13 @@
 		overflow-y: auto;
 		min-height: 0;
 		padding-right: 0.15rem;
+	}
+	.nav-row {
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.35rem 0.5rem;
+		flex-shrink: 0;
 	}
 	.panel-card {
 		background: var(--bg-card);
