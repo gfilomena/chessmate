@@ -195,12 +195,10 @@
 				<span class="player-name">
 					{$gameState.playerColor === 'white' ? $t.game.black : $t.game.white}
 				</span>
-				{#if oppCaptured.length > 0 || oppAdv > 0}
-					<div class="captured-row">
-						{#each oppCaptured as p}<span class="cap-piece">{p}</span>{/each}
-						{#if oppAdv > 0}<span class="cap-adv">+{oppAdv}</span>{/if}
-					</div>
-				{/if}
+				<div class="captured-row">
+					{#each oppCaptured as p}<span class="cap-piece">{p}</span>{/each}
+					{#if oppAdv > 0}<span class="cap-adv">+{oppAdv}</span>{/if}
+				</div>
 			</div>
 			<Timer
 				ms={$gameState.playerColor === 'white' ? $gameState.blackMs : $gameState.whiteMs}
@@ -270,12 +268,10 @@
 			<div class="player-info">
 				<span class="player-name">{$user?.username ?? 'Tu'}</span>
 				<span class="player-elo">{$user?.elo_rapid ?? ''}</span>
-				{#if myCaptured.length > 0 || myAdv > 0}
-					<div class="captured-row">
-						{#each myCaptured as p}<span class="cap-piece">{p}</span>{/each}
-						{#if myAdv > 0}<span class="cap-adv">+{myAdv}</span>{/if}
-					</div>
-				{/if}
+				<div class="captured-row">
+					{#each myCaptured as p}<span class="cap-piece">{p}</span>{/each}
+					{#if myAdv > 0}<span class="cap-adv">+{myAdv}</span>{/if}
+				</div>
 			</div>
 			<Timer
 				ms={$gameState.playerColor === 'white' ? $gameState.whiteMs : $gameState.blackMs}
@@ -424,6 +420,7 @@
 		align-items: center;
 		gap: 0.04rem;
 		margin-top: 0.12rem;
+		min-height: 1.3rem;  /* spazio pre-riservato per i pezzi catturati */
 	}
 	.cap-piece {
 		font-size: 1.25rem;
