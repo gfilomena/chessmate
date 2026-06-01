@@ -573,6 +573,7 @@
 				{:else if mode === 'setup'}
 					<SetupBoard
 						board={setupBoard}
+						playerColor={boardColor}
 						activePalettePiece={selectedPiece}
 						onBoardChange={onSetupBoardChange}
 						onPiecePlaced={() => { /* mantieni selezionato per piazzamenti multipli */ }}
