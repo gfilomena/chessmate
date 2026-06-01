@@ -8,6 +8,7 @@
 	import { PIECE_SVG, type PieceCode } from '$lib/chess/pieces';
 	import { StockfishEngine, evalToPercent, formatScore } from '$lib/chess/stockfish';
 	import { OPENINGS, detectOpening, openingStartFen, nextTheoreticalMoves, type Opening } from '$lib/chess/openings';
+	import ChessPageLayout from '$lib/chess/ChessPageLayout.svelte';
 	import { t } from '$lib/i18n';
 
 	// ── Mode ─────────────────────────────────────────────────────────────────────
@@ -545,64 +546,59 @@
 		</span>
 	</div>
 
-	<!-- ── Main grid: eval + board + panel ────────────────────────────────── -->
-	<div class="learn-layout">
+	<!-- ── Layout principale ──────────────────────────────────────────────── -->
+	<ChessPageLayout panelTitle="Info & Analisi">
 
-		<!-- Eval bar (colonna sinistra, sempre visibile in tutte le modalità) -->
-		<div class="eval-col">
+		{#snippet evalBar()}
 			<div class="eval-bar-wrap" title="{evalScore} — {evalText}">
 				<div class="eval-black" style="height:{100 - evalPct}%"></div>
 				<div class="eval-white" style="height:{evalPct}%"></div>
 				<span class="eval-score-label">{evalScore}</span>
 			</div>
-		</div>
+		{/snippet}
 
-		<!-- Scacchiera -->
-		<div class="board-col">
-			<div class="board-wrap">
-				{#if mode === 'free-a'}
-					<Board
-						fen={fenA}
-						playerColor={boardColor}
-						isMyTurn={true}
-						freePlay={true}
-						lastMove={lastMoveA}
-						arrows={bestArrow ? [bestArrow] : []}
-						onMove={handleFreeMove}
-					/>
-				{:else if mode === 'setup'}
-					<SetupBoard
-						board={setupBoard}
-						playerColor={boardColor}
-						activePalettePiece={selectedPiece}
-						onBoardChange={onSetupBoardChange}
-						onPiecePlaced={() => { /* mantieni selezionato per piazzamenti multipli */ }}
-					/>
-				{:else if mode === 'pgn'}
-					<Board
-						fen={pgnPositions[pgnIdx]?.fen ?? INITIAL_FEN}
-						playerColor={boardColor}
-						isMyTurn={false}
-						lastMove={pgnLastMove as any}
-						onMove={() => {}}
-					/>
-				{:else if mode === 'opening'}
-					<Board
-						fen={fenOp}
-						playerColor={boardColor}
-						isMyTurn={true}
-						freePlay={true}
-						lastMove={lastMoveOp}
-						arrows={theoryArrow ? [theoryArrow] : (bestArrow ? [bestArrow] : [])}
-						onMove={handleOpeningMove}
-					/>
-				{/if}
-			</div>
+		{#snippet board()}
+			{#if mode === 'free-a'}
+				<Board
+					fen={fenA}
+					playerColor={boardColor}
+					isMyTurn={true}
+					freePlay={true}
+					lastMove={lastMoveA}
+					arrows={bestArrow ? [bestArrow] : []}
+					onMove={handleFreeMove}
+				/>
+			{:else if mode === 'setup'}
+				<SetupBoard
+					board={setupBoard}
+					playerColor={boardColor}
+					activePalettePiece={selectedPiece}
+					onBoardChange={onSetupBoardChange}
+					onPiecePlaced={() => {}}
+				/>
+			{:else if mode === 'pgn'}
+				<Board
+					fen={pgnPositions[pgnIdx]?.fen ?? INITIAL_FEN}
+					playerColor={boardColor}
+					isMyTurn={false}
+					lastMove={pgnLastMove as any}
+					onMove={() => {}}
+				/>
+			{:else if mode === 'opening'}
+				<Board
+					fen={fenOp}
+					playerColor={boardColor}
+					isMyTurn={true}
+					freePlay={true}
+					lastMove={lastMoveOp}
+					arrows={theoryArrow ? [theoryArrow] : (bestArrow ? [bestArrow] : [])}
+					onMove={handleOpeningMove}
+				/>
+			{/if}
+		{/snippet}
 
-		</div>
-
-		<!-- Pannello laterale -->
-		<div class="panel-col">
+		{#snippet panel()}
+			<!-- Pannello laterale
 
 			<!-- Navigazione + azioni (tutte le modalità tranne Setup) -->
 			{#if mode !== 'setup'}
@@ -859,8 +855,9 @@
 				{/if}
 			{/if}
 
-		</div><!-- /panel-col -->
-	</div><!-- /learn-layout -->
+		{/snippet}<!-- /panel snippet -->
+
+	</ChessPageLayout>
 </div>
 
 <!-- Ghost globale per drag dalla palette -->
@@ -879,9 +876,15 @@
 		height: 100%;
 		display: flex;
 		flex-direction: column;
-		padding: 0.75rem 1rem 0.5rem;
-		gap: 0.6rem;
+		padding: 0.75rem 1rem 0;
+		gap: 0.5rem;
 		overflow: hidden;
+	}
+	/* ChessPageLayout occupa il resto dello spazio verticale */
+	.learn-page :global(.cpl-layout) {
+		flex: 1;
+		min-height: 0;
+		padding: 0;  /* il padding è già gestito dal .learn-page */
 	}
 
 	/* ── Mode bar ── */
@@ -938,27 +941,12 @@
 	}
 	.engine-status.ready { color: var(--accent); opacity: 0.9; }
 
-	/* ── Layout principale ── */
-	.learn-layout {
-		display: grid;
-		grid-template-columns: 28px 1fr 270px;
-		grid-template-rows: 1fr;   /* riga unica che occupa tutto lo spazio */
-		gap: 0.75rem;
-		flex: 1;
-		min-height: 0;
-		overflow: hidden;
-	}
-
-	/* ── Eval bar ── */
-	.eval-col {
-		display: flex;
-		align-items: stretch;
-	}
+	/* ── Eval bar (resa nel ChessPageLayout evalBar snippet) ── */
 	.eval-bar-wrap {
 		width: 24px;
 		height: 100%;
 		border-radius: 6px;
-		overflow: visible;   /* il label al confine non viene tagliato */
+		overflow: visible;
 		border: 1px solid var(--border);
 		display: flex;
 		flex-direction: column;
@@ -966,10 +954,7 @@
 		position: relative;
 	}
 	.eval-black { background: #1a1a1a; transition: height 0.4s ease; }
-	.eval-white {
-		background: #f0f0f0;
-		transition: height 0.4s ease;
-	}
+	.eval-white { background: #f0f0f0; transition: height 0.4s ease; }
 	.eval-score-label {
 		position: absolute;
 		top: 5px;
@@ -983,37 +968,8 @@
 		line-height: 1;
 		pointer-events: none;
 		white-space: nowrap;
-		/* bianco su nero (cima barra = sempre sezione nera);
-		   text-shadow garantisce leggibilità anche su fondo chiaro */
 		color: #f0f0f0;
 		text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1);
-	}
-
-	/* ── Board col ── */
-	.board-col {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		min-height: 0;
-		height: 100%;   /* occupa tutta la riga del grid */
-	}
-	.board-wrap {
-		/* Il div che avvolge <Board>: height-driven come il componente interno */
-		height: 100%;
-		width: auto;
-		max-width: 100%;
-		aspect-ratio: 1;
-	}
-
-	/* ── Panel col ── */
-	.panel-col {
-		display: flex;
-		flex-direction: column;
-		gap: 0.6rem;
-		overflow-y: auto;
-		min-height: 0;
-		padding-right: 0.15rem;
 	}
 	.nav-row {
 		background: var(--bg-card);
@@ -1283,10 +1239,7 @@
 
 	/* ── Mobile ── */
 	@media (max-width: 768px) {
-		.learn-page { padding: 0.5rem 0.5rem 0.25rem; overflow-y: auto; }
-		.learn-layout { grid-template-columns: 20px 1fr; grid-template-rows: auto auto; overflow: visible; }
-		.panel-col { grid-column: 1 / -1; overflow: visible; }
-		.board-wrap { max-width: min(calc(100vw - 1.5rem), 480px); }
+		.learn-page { padding: 0.5rem 0.5rem 0; overflow-y: hidden; }
 		.mode-tab { font-size: 0.72rem; padding: 0.25rem 0.55rem; }
 		.engine-status { display: none; }
 	}
