@@ -10,7 +10,8 @@
 	--bg-card:    #262421;   /* panel / card background     */
 	--bg-input:   #1C1A17;   /* input / deep background     */
 	--sidebar:    #1E1B18;   /* left sidebar background     */
-	--sidebar-w:  200px;     /* sidebar width               */
+	--sidebar-w:  200px;     /* sidebar width (expanded)    */
+	--sidebar-w-collapsed: 52px; /* sidebar width (collapsed) */
 	--accent:     #81B64C;   /* chess.com green             */
 	--accent-dark:#6A9A3D;   /* hover green                 */
 	--text:       #E2E0D5;   /* primary text                */
@@ -210,6 +211,71 @@ a:hover { text-decoration: underline; }
 /* Nessuna sidebar (utente non loggato) → content a piena larghezza */
 .no-sidebar .main-content {
 	margin-left: 0;
+}
+
+/* ── Sidebar collapsed: solo icone ────────────────────────── */
+.sidebar {
+	transition: width 0.2s ease, min-width 0.2s ease;
+}
+.sidebar.collapsed {
+	width: var(--sidebar-w-collapsed);
+	min-width: var(--sidebar-w-collapsed);
+}
+/* Il main-content si sposta di conseguenza */
+.main-content {
+	transition: margin-left 0.2s ease;
+}
+.sidebar-collapsed .main-content {
+	margin-left: var(--sidebar-w-collapsed);
+}
+/* Nasconde testi e info utente quando collapsed */
+.sidebar.collapsed .sidebar-logo-text,
+.sidebar.collapsed .user-info,
+.sidebar.collapsed .user-name,
+.sidebar.collapsed .user-elo,
+.sidebar.collapsed .logout-btn,
+.sidebar.collapsed .nav-item span:not(.nav-icon) {
+	display: none;
+}
+/* Centra le icone quando collapsed */
+.sidebar.collapsed .sidebar-logo {
+	justify-content: center;
+	padding: 1rem 0 0.75rem;
+}
+.sidebar.collapsed .user-row {
+	justify-content: center;
+	padding: 0.6rem 0;
+}
+.sidebar.collapsed .nav-item {
+	justify-content: center;
+	padding: 0.6rem 0;
+}
+/* Tasto toggle: in fondo alla sidebar */
+.sidebar-toggle {
+	margin-top: auto;
+	border: none;
+	background: none;
+	color: var(--text-muted);
+	width: 100%;
+	padding: 0.7rem;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	font-size: 0.8rem;
+	border-top: 1px solid rgba(255,255,255,0.06);
+	transition: color 0.15s, background 0.15s;
+}
+.sidebar-toggle:hover {
+	color: var(--text);
+	background: rgba(255,255,255,0.06);
+}
+.sidebar.collapsed .sidebar-toggle {
+	justify-content: center;
+}
+.sidebar.collapsed .sidebar-toggle-label {
+	display: none;
 }
 
 /* ── Form cards ────────────────────────────────────────── */

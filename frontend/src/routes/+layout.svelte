@@ -14,8 +14,9 @@
 
 	let { children } = $props();
 
-	let sidebarOpen  = $state(false);
-	let userMenuOpen = $state(false);
+	let sidebarOpen      = $state(false);
+	let userMenuOpen     = $state(false);
+	let sidebarCollapsed = $state(false);
 
 	// Sidebar visibile solo quando l'utente è autenticato
 	const showSidebar = $derived(!!$user);
@@ -108,11 +109,11 @@
 	></div>
 {/if}
 
-<div class="app-shell" class:no-sidebar={!showSidebar}>
+<div class="app-shell" class:no-sidebar={!showSidebar} class:sidebar-collapsed={sidebarCollapsed}>
 
 	<!-- ── Left sidebar (solo utenti loggati) ───────────────── -->
 	{#if showSidebar}
-		<aside class="sidebar" class:sidebar-open={sidebarOpen}>
+		<aside class="sidebar" class:sidebar-open={sidebarOpen} class:collapsed={sidebarCollapsed}>
 
 			<a href="/" class="sidebar-logo" onclick={() => sidebarOpen = false}>
 				<img src={favicon} alt="" class="sidebar-logo-img" aria-hidden="true" />
@@ -152,6 +153,15 @@
 					</a>
 				{/if}
 			</nav>
+
+			<button
+				class="sidebar-toggle"
+				onclick={() => sidebarCollapsed = !sidebarCollapsed}
+				title={sidebarCollapsed ? 'Espandi menu' : 'Comprimi menu'}
+			>
+				<span class="sidebar-toggle-label">{sidebarCollapsed ? '' : 'Comprimi'}</span>
+				{sidebarCollapsed ? '▶' : '◀'}
+			</button>
 		</aside>
 	{/if}
 
