@@ -486,18 +486,14 @@
 	/* ── Board wrapper ──────────────────────────────────────────── */
 	.board-wrap {
 		position: relative;
-		/* Height-driven: si adatta all'altezza del contenitore padre,
-		   la larghezza segue dall'aspect-ratio (quadrato).
-		   max-width: 100% impedisce di sforare in orizzontale. */
+		/* Riempie il cpl-board-sizer (o qualsiasi contenitore quadrato) */
+		width: 100%;
 		height: 100%;
-		width: auto;
-		max-width: 100%;
-		aspect-ratio: 1 / 1;
 	}
 
 	@media (max-width: 768px) {
 		.board-wrap {
-			/* Mobile: la colonna è verticale, quindi width-driven */
+			/* Mobile: dimensionamento esplicito (sizer non attivo su mobile) */
 			height: auto;
 			width: min(calc(100vw - 1rem), calc(100dvh - 52px - 186px));
 		}

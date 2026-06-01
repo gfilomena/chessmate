@@ -61,7 +61,10 @@
 		{/if}
 
 		<div class="cpl-board-container">
-			{@render board()}
+			<!-- Sizer normalizza height-driven per Board e SetupBoard -->
+			<div class="cpl-board-sizer">
+				{@render board()}
+			</div>
 		</div>
 
 		{#if bottomPlayer}
@@ -129,12 +132,20 @@
 	}
 
 	.cpl-board-container {
-		position: relative;
 		flex: 1;
 		min-height: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	/* Sizer: controlla il sizing, Board/SetupBoard lo riempiono con width/height 100% */
+	.cpl-board-sizer {
+		position: relative;   /* ancora per gli overlay assoluti (risultato, attesa) */
+		height: 100%;
+		width: auto;
+		max-width: 100%;
+		aspect-ratio: 1;
 	}
 
 	/* ── Panel col ── */
@@ -173,6 +184,13 @@
 		}
 
 		.cpl-eval { display: none; /* su mobile la eval bar è nascosta */ }
+
+		/* Mobile: sizer lascia che Board/SetupBoard usino la loro CSS mobile */
+		.cpl-board-sizer {
+			height: auto;
+			width: auto;
+			aspect-ratio: unset;
+		}
 
 		.cpl-board-col {
 			width: 100%;
