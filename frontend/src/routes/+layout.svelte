@@ -184,7 +184,16 @@
 
 	<!-- ── Main content ──────────────────────────────────────── -->
 	<main class="main-content">
-		{@render children()}
+		{#if $authLoading}
+			<!-- Auth in corso: non mostrare nulla (evita flash di contenuto protetto) -->
+			<div class="auth-gate-spinner">
+				<div class="auth-gate-dot"></div>
+			</div>
+		{:else if !$user && isProtected($page.url.pathname)}
+			<!-- Non autenticato su route protetta: vuoto (il $effect farà redirect) -->
+		{:else}
+			{@render children()}
+		{/if}
 	</main>
 
 </div>
@@ -207,6 +216,23 @@
 		background: rgba(200, 168, 75, 0.12);
 		color: #c8a84b;
 	}
+
+	/* ── Auth gate spinner ── */
+	.auth-gate-spinner {
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.auth-gate-dot {
+		width: 32px;
+		height: 32px;
+		border: 3px solid var(--border);
+		border-top-color: var(--accent);
+		border-radius: 50%;
+		animation: auth-spin 0.7s linear infinite;
+	}
+	@keyframes auth-spin { to { transform: rotate(360deg); } }
 
 	/* ── Mobile hamburger placeholder (centra il logo) ── */
 	.mobile-hamburger-placeholder {
