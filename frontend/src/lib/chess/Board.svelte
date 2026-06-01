@@ -403,17 +403,19 @@
 	/* ── Board wrapper ──────────────────────────────────────────── */
 	.board-wrap {
 		position: relative;
-		/* 720px max per sfruttare schermi più alti; 90px di overhead:
-		   2 × player-row(~34px) + 2 × gap(~5px) + 2 × padding(~6px) */
-		width: min(100%, 720px, calc(100dvh - 90px), calc(100vw - 480px));
+		/* Height-driven: si adatta all'altezza del contenitore padre,
+		   la larghezza segue dall'aspect-ratio (quadrato).
+		   max-width: 100% impedisce di sforare in orizzontale. */
+		height: 100%;
+		width: auto;
+		max-width: 100%;
 		aspect-ratio: 1 / 1;
 	}
 
 	@media (max-width: 768px) {
 		.board-wrap {
-			/* game-layout sottrae già i 52px dell'header; qui togliamo solo
-			   l'overhead interno: 2×player-row(~36px) + moves-strip(~30px)
-			   + nav-bar(~36px) + panel-toggle(~34px) + gaps+padding(~50px) ≈ 186px */
+			/* Mobile: la colonna è verticale, quindi width-driven */
+			height: auto;
 			width: min(calc(100vw - 1rem), calc(100dvh - 52px - 186px));
 		}
 	}

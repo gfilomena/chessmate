@@ -940,6 +940,7 @@
 	.learn-layout {
 		display: grid;
 		grid-template-columns: 28px 1fr 270px;
+		grid-template-rows: 1fr;   /* riga unica che occupa tutto lo spazio */
 		gap: 0.75rem;
 		flex: 1;
 		min-height: 0;
@@ -988,12 +989,14 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 0.4rem;
 		min-height: 0;
+		height: 100%;   /* occupa tutta la riga del grid */
 	}
 	.board-wrap {
-		width: 100%;
-		max-width: min(calc(100% - 0px), calc(100vh - 200px));
+		/* Il div che avvolge <Board>: height-driven come il componente interno */
+		height: 100%;
+		width: auto;
+		max-width: 100%;
 		aspect-ratio: 1;
 	}
 

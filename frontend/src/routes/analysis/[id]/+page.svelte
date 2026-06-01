@@ -451,18 +451,14 @@
 		display: flex;
 		gap: 1rem;
 		padding: 0.4rem 1.5rem;
-		align-items: flex-start;
+		align-items: stretch;    /* board-col si estende a tutta l'altezza */
 		justify-content: center;
 		height: 100%;
 		overflow: hidden;
 	}
 
-	/* Ridimensiona la scacchiera per la pagina analisi:
-	   overhead verticale = padding(0.8rem≈13px) + game-info(22px) + nav(44px) + gaps(2×6px≈12px) ≈ 91px → 95px
-	   overhead orizzontale = eval-bar(36px) + col-gap(16px) + moves-col(210px) + padding(48px) ≈ 310px → 320px */
-	:global(.analysis-layout .board-wrap) {
-		width: min(720px, calc(100dvh - 95px), calc(100vw - 320px));
-	}
+	/* La board in analisi è height-driven come le altre pagine.
+	   Il :global era necessario con l'approccio width-driven; ora non serve. */
 
 	/* ── Board column ── */
 	.board-col {
@@ -470,6 +466,7 @@
 		flex-direction: column;
 		gap: 0.4rem;
 		flex-shrink: 0;
+		min-height: 0;
 	}
 
 	/* Riga che contiene eval-bar + scacchiera, allineati in altezza */
@@ -477,6 +474,8 @@
 		display: flex;
 		gap: 0.5rem;
 		align-items: stretch;
+		flex: 1;       /* occupa lo spazio rimanente sotto game-info e nav */
+		min-height: 0;
 	}
 
 	/* ── Eval bar — stessa altezza della scacchiera (stretch) ── */
