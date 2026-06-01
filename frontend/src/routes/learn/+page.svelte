@@ -548,16 +548,13 @@
 	<!-- ── Main grid: eval + board + panel ────────────────────────────────── -->
 	<div class="learn-layout">
 
-		<!-- Eval bar (colonna sinistra, solo se c'è un risultato) -->
+		<!-- Eval bar (colonna sinistra, sempre visibile in tutte le modalità) -->
 		<div class="eval-col">
-			{#if mode !== 'pgn'}
-				<div class="eval-bar-wrap" title="{evalScore} — {evalText}">
-					<div class="eval-black" style="height:{100 - evalPct}%"></div>
-					<div class="eval-white" style="height:{evalPct}%"></div>
-					<!-- sempre fisso in cima alla barra (sezione nera) -->
-					<span class="eval-score-label">{evalScore}</span>
-				</div>
-			{/if}
+			<div class="eval-bar-wrap" title="{evalScore} — {evalText}">
+				<div class="eval-black" style="height:{100 - evalPct}%"></div>
+				<div class="eval-white" style="height:{evalPct}%"></div>
+				<span class="eval-score-label">{evalScore}</span>
+			</div>
 		</div>
 
 		<!-- Scacchiera -->
@@ -781,17 +778,6 @@
 				</div>
 
 				{#if pgnLoaded}
-					<div class="panel-card">
-						<div class="nav-controls">
-							<button class="nav-btn" onclick={pgFirst}  disabled={pgnIdx===0}>⏮</button>
-							<button class="nav-btn" onclick={pgPrev}   disabled={pgnIdx===0}>◀</button>
-							<span class="nav-pos">{pgnIdx} / {pgnPositions.length-1}</span>
-							<button class="nav-btn" onclick={pgNext}   disabled={pgnIdx===pgnPositions.length-1}>▶</button>
-							<button class="nav-btn" onclick={pgLast}   disabled={pgnIdx===pgnPositions.length-1}>⏭</button>
-						</div>
-						<p class="nav-hint">← → tasti freccia</p>
-					</div>
-
 					<div class="move-list" bind:this={moveListEl}>
 						{#each pgnPositions as pos, i}
 							{#if i === 0}
@@ -1238,15 +1224,6 @@
 	}
 	.pgn-textarea:focus { border-color: var(--accent); }
 	.pgn-error { font-size: 0.75rem; color: var(--danger); }
-	.nav-controls { display: flex; align-items: center; gap: 0.3rem; }
-	.nav-btn {
-		background: none; border: none; color: var(--text-muted); font-size: 1rem;
-		cursor: pointer; padding: 0.2rem 0.3rem; border-radius: 4px;
-		transition: color 0.15s, background 0.15s;
-	}
-	.nav-btn:hover:not(:disabled) { color: var(--text); background: rgba(255,255,255,0.07); }
-	.nav-btn:disabled { opacity: 0.3; cursor: default; }
-	.nav-pos { flex: 1; text-align: center; font-size: 0.75rem; color: var(--text-muted); font-family: monospace; }
 	.nav-hint { font-size: 0.68rem; color: var(--text-muted); text-align: center; opacity: 0.6; }
 	.move-list {
 		background: var(--bg-card);

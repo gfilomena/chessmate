@@ -227,7 +227,9 @@
 <style>
 	.setup-board-wrap {
 		position: relative;
-		width: 100%;
+		height: 100%;
+		width: auto;
+		max-width: 100%;
 		aspect-ratio: 1;
 		user-select: none;
 	}
