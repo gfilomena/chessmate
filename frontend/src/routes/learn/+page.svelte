@@ -479,6 +479,25 @@
 		else if (mode === 'opening') navOp(i);
 		else navA(i);
 	}
+	function tlUndo() {
+		if (mode === 'pgn') pgPrev();
+		else if (mode === 'opening') navOp(idxOp - 1);
+		else navA(idxA - 1);
+	}
+	function tlReset() {
+		if (mode === 'pgn') { pgnIdx = 0; }
+		else if (mode === 'opening') resetOpening();
+		else resetA();
+	}
+	const tlCanUndo = $derived(
+		mode === 'pgn'     ? pgnIdx > 0 :
+		mode === 'opening' ? idxOp > 0  : idxA > 0
+	);
+	const tlCanReset = $derived(
+		mode === 'pgn'     ? pgnPositions.length > 1 :
+		mode === 'opening' ? idxOp > 0 || historyOp.length > 1 :
+		historyA.length > 1
+	);
 
 	// ── Mode switch ───────────────────────────────────────────────────────────────
 	function switchMode(m: Mode) {
@@ -590,7 +609,7 @@
 		<!-- Pannello laterale -->
 		<div class="panel-col">
 
-			<!-- Navigazione mosse (tutte le modalità tranne Setup) -->
+			<!-- Navigazione + azioni (tutte le modalità tranne Setup) -->
 			{#if mode !== 'setup'}
 				<div class="nav-row">
 					<NavTimeline
@@ -603,6 +622,15 @@
 						onLast={tlLast}
 						onGoto={tlGoto}
 					/>
+				</div>
+
+				<div class="unified-actions">
+					<button class="action-btn" onclick={tlUndo} disabled={!tlCanUndo}>
+						↩ Annulla
+					</button>
+					<button class="action-btn danger" onclick={tlReset} disabled={!tlCanReset}>
+						↺ Reset
+					</button>
 				</div>
 			{/if}
 
@@ -640,13 +668,6 @@
 						disabled={!engineReady || analyzing}>
 						📊 Valuta posizione
 					</button>
-				</div>
-
-				<div class="free-actions">
-					<button class="action-btn" onclick={undoA} disabled={sanHistA.length === 0}>
-						↩ Annulla
-					</button>
-					<button class="action-btn danger" onclick={resetA}>↺ Reset</button>
 				</div>
 
 				{#if sanHistA.length > 0}
@@ -851,9 +872,6 @@
 						</button>
 					</div>
 
-					<div class="free-actions">
-						<button class="action-btn danger" onclick={resetOpening}>↺ Reset</button>
-					</div>
 				{/if}
 			{/if}
 
@@ -1113,7 +1131,8 @@
 	.explain-arrow { color: #00bcd4; font-weight: 700; flex-shrink: 0; }
 
 	/* ── Action buttons ── */
-	.free-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+	.free-actions    { display: flex; gap: 0.4rem; flex-shrink: 0; }
+	.unified-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
 	.action-btn {
 		flex: 1;
 		background: var(--bg-card);
