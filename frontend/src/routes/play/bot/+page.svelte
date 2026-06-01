@@ -808,6 +808,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: clamp(0.2rem, 0.4dvh, 0.35rem);
+	align-self: stretch;
+	min-height: 0;
 }
 
 .player-row {
@@ -868,6 +870,11 @@
 
 .board-container {
 	position: relative;
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .overlay {
