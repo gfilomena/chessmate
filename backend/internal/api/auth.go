@@ -1,6 +1,7 @@
 package api
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -25,10 +26,15 @@ func NewAuthHandler(pg *db.Postgres, cfg *AdminConfig, mailer *Mailer) *AuthHand
 
 var jwtSecret = func() []byte {
 	s := os.Getenv("JWT_SECRET")
-	if s == "" {
-		log.Fatal("JWT_SECRET non impostato — impossibile avviare il server")
+	if s != "" {
+		return []byte(s)
 	}
-	return []byte(s)
+	log.Println("⚠️  JWT_SECRET non impostato — le sessioni non sopravvivono ai restart")
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		log.Fatal("impossibile generare JWT_SECRET casuale:", err)
+	}
+	return b
 }()
 
 const (
