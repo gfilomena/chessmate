@@ -554,11 +554,8 @@
 				<div class="eval-bar-wrap" title="{evalScore} — {evalText}">
 					<div class="eval-black" style="height:{100 - evalPct}%"></div>
 					<div class="eval-white" style="height:{evalPct}%"></div>
-					<!-- label al confine nero/bianco, colore contrastante -->
-					<span class="eval-score-label"
-						style="bottom:{evalPct}%; color:{evalPct > 50 ? '#1a1a1a' : '#f0f0f0'}">
-						{evalScore}
-					</span>
+					<!-- sempre fisso in cima alla barra (sezione nera) -->
+					<span class="eval-score-label">{evalScore}</span>
 				</div>
 			{/if}
 		</div>
@@ -988,8 +985,9 @@
 	}
 	.eval-score-label {
 		position: absolute;
+		top: 5px;
 		left: 50%;
-		transform: translateX(-50%) translateY(50%);
+		transform: translateX(-50%);
 		font-size: 0.52rem;
 		font-weight: 800;
 		font-family: monospace;
@@ -997,8 +995,11 @@
 		text-orientation: mixed;
 		line-height: 1;
 		pointer-events: none;
-		transition: bottom 0.4s ease, color 0.3s;
 		white-space: nowrap;
+		/* bianco su nero (cima barra = sempre sezione nera);
+		   text-shadow garantisce leggibilità anche su fondo chiaro */
+		color: #f0f0f0;
+		text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1);
 	}
 
 	/* ── Board col ── */
