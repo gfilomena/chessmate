@@ -1,12 +1,19 @@
 <script lang="ts">
 	import { login, devLogin, user, authLoading, resendVerification } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { API_URL, DEV_MODE } from '$lib/config';
 	import { t } from '$lib/i18n';
 
-	// Se già autenticato → vai alla home
+	// Destinazione post-login (da ?redirect= o home)
+	const redirectTo = $derived(() => {
+		const r = $page.url.searchParams.get('redirect');
+		return r && r.startsWith('/') ? r : '/';
+	});
+
+	// Se già autenticato → vai alla destinazione
 	$effect(() => {
-		if (!$authLoading && $user) goto('/');
+		if (!$authLoading && $user) goto(redirectTo());
 	});
 
 	// ── Normal login state ────────────────────────────────────────────────────────
@@ -32,7 +39,7 @@
 		loading = true;
 		try {
 			await login(email, password);
-			goto('/');
+			goto(redirectTo());
 		} catch (err: any) {
 			const code: string = err.message ?? '';
 			if (code === 'EMAIL_NOT_VERIFIED') {
@@ -68,7 +75,7 @@
 		loading = true;
 		try {
 			await devLogin(devUsername.trim());
-			goto('/');
+			goto(redirectTo());
 		} catch (err: any) {
 			error = err.message ?? 'Utente non trovato';
 		} finally {

@@ -3,6 +3,7 @@
 	import '../app.css';
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import { user, authLoading, loadUser, logout } from '$lib/stores/auth';
 	import {
 		startHeartbeat, stopHeartbeat,
@@ -17,6 +18,22 @@
 	let sidebarOpen      = $state(false);
 	let userMenuOpen     = $state(false);
 	let sidebarCollapsed = $state(false);
+
+	// Route che richiedono autenticazione
+	const PROTECTED_PREFIXES = ['/play', '/learn', '/game', '/analysis', '/leaderboard', '/profile', '/admin'];
+	const PUBLIC_PATHS = ['/', '/login', '/register', '/about', '/privacy', '/verify-email'];
+
+	function isProtected(path: string) {
+		return PROTECTED_PREFIXES.some(p => path === p || path.startsWith(p + '/'));
+	}
+
+	// Redirect a /login se non autenticato su route protetta
+	$effect(() => {
+		if ($authLoading) return;
+		if (!$user && isProtected($page.url.pathname)) {
+			goto(`/login?redirect=${encodeURIComponent($page.url.pathname)}`);
+		}
+	});
 
 	// Sidebar visibile solo quando l'utente è autenticato
 	const showSidebar = $derived(!!$user);
