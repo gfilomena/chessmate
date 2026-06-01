@@ -553,12 +553,12 @@
 			{#if mode !== 'pgn'}
 				<div class="eval-bar-wrap" title="{evalScore} — {evalText}">
 					<div class="eval-black" style="height:{100 - evalPct}%"></div>
-					<div class="eval-white" style="height:{evalPct}%">
-						<span class="eval-score-label"
-							style="color:{evalPct > 50 ? '#1a1a1a' : '#fff'}">
-							{evalScore}
-						</span>
-					</div>
+					<div class="eval-white" style="height:{evalPct}%"></div>
+					<!-- label al confine nero/bianco, colore contrastante -->
+					<span class="eval-score-label"
+						style="bottom:{evalPct}%; color:{evalPct > 50 ? '#1a1a1a' : '#f0f0f0'}">
+						{evalScore}
+					</span>
 				</div>
 			{/if}
 		</div>
@@ -974,7 +974,7 @@
 		width: 24px;
 		height: 100%;
 		border-radius: 6px;
-		overflow: hidden;
+		overflow: visible;   /* il label al confine non viene tagliato */
 		border: 1px solid var(--border);
 		display: flex;
 		flex-direction: column;
@@ -985,20 +985,20 @@
 	.eval-white {
 		background: #f0f0f0;
 		transition: height 0.4s ease;
-		display: flex;
-		align-items: flex-end;
-		justify-content: center;
-		padding-bottom: 4px;
-		position: relative;
 	}
 	.eval-score-label {
-		font-size: 0.55rem;
+		position: absolute;
+		left: 50%;
+		transform: translateX(-50%) translateY(50%);
+		font-size: 0.52rem;
 		font-weight: 800;
 		font-family: monospace;
 		writing-mode: vertical-rl;
 		text-orientation: mixed;
-		transform: rotate(180deg);
 		line-height: 1;
+		pointer-events: none;
+		transition: bottom 0.4s ease, color 0.3s;
+		white-space: nowrap;
 	}
 
 	/* ── Board col ── */

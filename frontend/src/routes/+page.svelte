@@ -94,8 +94,8 @@
 		</div>
 	</div>
 
-	<!-- ── Footer info (solo visitatori non loggati) ─────────────── -->
-	{#if !$authLoading && !$user}
+	<!-- ── Footer: Chi siamo, Privacy, Lingue — sempre visibile ──── -->
+	{#if !$authLoading}
 		<div class="home-footer">
 			<nav class="footer-links">
 				<a href="/about">{$t.nav.about}</a>
