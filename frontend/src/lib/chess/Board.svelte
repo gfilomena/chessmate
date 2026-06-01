@@ -79,13 +79,69 @@
 	let legalTargets     = $state<string[]>([]);
 	let promotionPending = $state<{ from: string; to: string } | null>(null);
 
-	// Drag state
+	// Drag state (left-click)
 	let isDragActive = $state(false);
 	let dragFrom     = $state<string | null>(null);
 	let dragSvg      = $state<string | null>(null);
 	let dragX        = $state(0);
 	let dragY        = $state(0);
 	let squareSize   = $state(60);
+
+	// ── Right-click arrow drawing (chess.com style) ────────────────
+	let drawnArrows   = $state<{ from: string; to: string }[]>([]);
+	let highlighted   = $state<string[]>([]); // caselle evidenziate (right-click senza drag)
+	let arrowDragFrom = $state<string | null>(null);  // quadrato di partenza dell'arrow drag
+	let arrowPreview  = $state<{ from: string; to: string } | null>(null); // freccia in costruzione
+
+	// Tutte le frecce da renderizzare: prop + disegnate utente + preview
+	const allArrows = $derived([
+		...arrows,
+		...drawnArrows.map(a => ({ ...a, color: 'rgba(235, 97, 0, 0.82)' })),
+		...(arrowPreview ? [{ ...arrowPreview, color: 'rgba(235, 97, 0, 0.5)' }] : []),
+	]);
+
+	function squareFromPoint(x: number, y: number): string | null {
+		if (!boardEl) return null;
+		const els = document.elementsFromPoint(x, y);
+		const btn = els.find(el => el.hasAttribute('data-sq')) as HTMLElement | null;
+		return btn?.dataset.sq ?? null;
+	}
+
+	function startArrowDrag(fromSq: string) {
+		arrowDragFrom = fromSq;
+		arrowPreview  = null;
+	}
+
+	function updateArrowPreview(toSq: string | null) {
+		if (!arrowDragFrom) return;
+		arrowPreview = toSq && toSq !== arrowDragFrom ? { from: arrowDragFrom, to: toSq } : null;
+	}
+
+	function finishArrowDrag(toSq: string | null) {
+		if (!arrowDragFrom) return;
+		if (!toSq || toSq === arrowDragFrom) {
+			// Click destro senza drag → evidenzia casella (toggle)
+			highlighted = highlighted.includes(arrowDragFrom)
+				? highlighted.filter(s => s !== arrowDragFrom)
+				: [...highlighted, arrowDragFrom];
+		} else {
+			// Toggle freccia: se esiste già la rimuove, altrimenti la aggiunge
+			const key = `${arrowDragFrom}-${toSq}`;
+			const exists = drawnArrows.some(a => `${a.from}-${a.to}` === key);
+			drawnArrows = exists
+				? drawnArrows.filter(a => `${a.from}-${a.to}` !== key)
+				: [...drawnArrows, { from: arrowDragFrom, to: toSq }];
+		}
+		arrowDragFrom = null;
+		arrowPreview  = null;
+	}
+
+	function clearUserMarkings() {
+		drawnArrows   = [];
+		highlighted   = [];
+		arrowDragFrom = null;
+		arrowPreview  = null;
+	}
 
 	// Non-reactive internal tracking
 	let boardEl: HTMLElement | undefined;
@@ -267,6 +323,26 @@
 		document.body.style.cursor = isDragActive ? 'grabbing' : '';
 	});
 
+	// ── Right-click mouse events per arrow drawing ─────────────────
+	function onBoardMouseDown(e: MouseEvent) {
+		if (e.button !== 2) return; // solo tasto destro
+		e.preventDefault();
+		const sq = squareFromPoint(e.clientX, e.clientY);
+		if (sq) startArrowDrag(sq);
+	}
+
+	function onBoardMouseMove(e: MouseEvent) {
+		if (!arrowDragFrom) return;
+		const sq = squareFromPoint(e.clientX, e.clientY);
+		updateArrowPreview(sq);
+	}
+
+	function onBoardMouseUp(e: MouseEvent) {
+		if (e.button !== 2) return;
+		const sq = squareFromPoint(e.clientX, e.clientY);
+		finishArrowDrag(sq);
+	}
+
 	// ── Shared move logic ──────────────────────────────────────────
 	function tryMove(from: string, to: string) {
 		const piece = chess.get(from as any);
@@ -313,7 +389,12 @@
 	{/if}
 
 	<!-- 8×8 grid -->
-	<div class="board" bind:this={boardEl}>
+	<div class="board" bind:this={boardEl}
+		onmousedown={onBoardMouseDown}
+		onmousemove={onBoardMouseMove}
+		onmouseup={onBoardMouseUp}
+		oncontextmenu={(e) => e.preventDefault()}
+	>
 		{#each ranks as rank}
 			{#each files as file}
 				{@const square   = sq(file, rank)}
@@ -322,6 +403,7 @@
 				{@const hasPiece = svg !== null}
 				{@const light    = isLight(file, rank)}
 				{@const isDragSrc = dragFrom === square}
+				{@const isHighlighted = highlighted.includes(square)}
 				<button
 					data-sq={square}
 					class="square"
@@ -329,7 +411,8 @@
 					class:dark={!light}
 					class:selected={isSel(square)}
 					class:last-move={isLast(square)}
-					onpointerdown={(e) => onPtrDown(e, square, svg)}
+					class:highlighted={isHighlighted}
+					onpointerdown={(e) => { if (e.button === 0) { clearUserMarkings(); onPtrDown(e, square, svg); } }}
 					aria-label={square}
 				>
 					<!-- Inside-board coordinate labels (chess.com style) -->
@@ -369,9 +452,9 @@
 	</div>
 
 	<!-- Arrow overlay — dentro board-wrap, sopra i pezzi -->
-	{#if arrows.length > 0}
+	{#if allArrows.length > 0}
 		<svg class="arrows-layer" viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-			{#each arrows as arrow}
+			{#each allArrows as arrow}
 				{@const a = computeArrow(arrow.from, arrow.to)}
 				{#if a}
 					{@const col = arrow.color ?? 'rgba(100,190,100,0.88)'}
@@ -461,6 +544,9 @@
 
 	.light.last-move { background: #CDD26A; }
 	.dark.last-move  { background: #AAA23A; }
+
+	.light.highlighted { background: rgba(235, 97, 0, 0.5); }
+	.dark.highlighted  { background: rgba(235, 97, 0, 0.65); }
 
 	/* ── Coordinate labels (inside board) ───────────────────────── */
 	.coord {
