@@ -19,6 +19,26 @@
 	let userMenuOpen     = $state(false);
 	let sidebarCollapsed = $state(false);
 
+	// Deploy badge (solo admin)
+	let deployVersion = $state('');
+	let deployDate    = $state('');
+	onMount(async () => {
+		try {
+			const r = await fetch('/_app/version.json');
+			if (r.ok) {
+				const j = await r.json();
+				const ts = parseInt(j.version, 10);
+				deployVersion = j.version ?? '';
+				if (!isNaN(ts)) {
+					deployDate = new Date(ts).toLocaleString('it-IT', {
+						day: '2-digit', month: '2-digit', year: '2-digit',
+						hour: '2-digit', minute: '2-digit'
+					});
+				}
+			}
+		} catch {}
+	});
+
 	// Route che richiedono autenticazione
 	const PROTECTED_PREFIXES = ['/play', '/learn', '/game', '/analysis', '/leaderboard', '/profile', '/admin'];
 	const PUBLIC_PATHS = ['/', '/login', '/register', '/about', '/privacy', '/verify-email'];
@@ -204,6 +224,13 @@
 <!-- Cookie consent banner (GDPR) -->
 <CookieBanner />
 
+<!-- Deploy badge — solo admin -->
+{#if $user?.is_admin && deployVersion}
+<div class="deploy-badge" title="Versione deploy in produzione">
+	🚀 {deployDate} · <span class="deploy-ver">{deployVersion}</span>
+</div>
+{/if}
+
 <style>
 	/* ── Admin nav item ── */
 	:global(.nav-item-admin) {
@@ -233,6 +260,23 @@
 		animation: auth-spin 0.7s linear infinite;
 	}
 	@keyframes auth-spin { to { transform: rotate(360deg); } }
+
+	/* ── Deploy badge (solo admin) ── */
+	.deploy-badge {
+		position: fixed;
+		bottom: 0.5rem;
+		right: 0.6rem;
+		font-size: 0.62rem;
+		color: var(--text-muted);
+		opacity: 0.45;
+		pointer-events: none;
+		z-index: 9999;
+		white-space: nowrap;
+		font-family: monospace;
+		transition: opacity 0.2s;
+	}
+	.deploy-badge:hover { opacity: 0.9; pointer-events: auto; }
+	.deploy-ver { opacity: 0.7; }
 
 	/* ── Mobile hamburger placeholder (centra il logo) ── */
 	.mobile-hamburger-placeholder {
