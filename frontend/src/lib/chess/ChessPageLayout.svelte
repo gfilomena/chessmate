@@ -136,6 +136,7 @@
 	}
 
 	.cpl-board-container {
+		container-type: size;   /* abilita container queries su width e height */
 		flex: 1;
 		min-height: 0;
 		width: 100%;
@@ -144,13 +145,12 @@
 		justify-content: center;
 	}
 
-	/* Sizer: quadrato che occupa min(larghezza, altezza) del container */
+	/* Sizer: quadrato = min(container_width, container_height) — sempre identico
+	   indipendentemente da quale componente è dentro (Board o SetupBoard) */
 	.cpl-board-sizer {
 		position: relative;
-		height: 100%;
-		width: auto;
-		max-width: 100%;
-		aspect-ratio: 1;
+		width: min(100cqw, 100cqh);
+		height: min(100cqw, 100cqh);
 	}
 
 	/* ── Panel col ── */
@@ -192,12 +192,9 @@
 
 		.cpl-eval { display: none; /* su mobile la eval bar è nascosta */ }
 
-		/* Mobile: sizer lascia che Board/SetupBoard usino la loro CSS mobile */
-		.cpl-board-sizer {
-			height: auto;
-			width: auto;
-			aspect-ratio: unset;
-		}
+		/* Mobile: board-container non è size container, Board usa la sua CSS mobile */
+		.cpl-board-container { container-type: normal; }
+		.cpl-board-sizer { width: auto; height: auto; }
 
 		.cpl-board-col {
 			width: 100%;
