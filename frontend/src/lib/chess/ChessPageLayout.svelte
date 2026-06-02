@@ -159,10 +159,12 @@
 		flex-direction: column;
 		gap: 0.75rem;
 		width: 260px;
-		flex-shrink: 0;
+		flex: 0 0 260px;   /* larghezza fissa, non cresce né si restringe mai */
 		height: 100%;
-		justify-content: center;
+		align-self: stretch;
+		justify-content: flex-start;   /* contenuto sempre dall'alto, nessun salto */
 		overflow-y: auto;
+		overflow-x: hidden;
 		padding-right: 0.1rem;
 	}
 
