@@ -1,6 +1,12 @@
 # ── Stage 1: Build frontend SvelteKit ─────────────────────────────────────
 FROM node:20-alpine AS frontend-builder
 
+# Render injects RENDER_GIT_COMMIT automatically during builds
+ARG RENDER_GIT_COMMIT=unknown
+ENV VITE_GIT_COMMIT=$RENDER_GIT_COMMIT
+# Use build timestamp as date fallback
+ENV VITE_GIT_DATE=""
+
 WORKDIR /app/frontend
 
 COPY frontend/package*.json ./
