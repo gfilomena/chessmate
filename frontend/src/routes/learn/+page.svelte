@@ -43,37 +43,44 @@
 	onDestroy(() => engine?.destroy());
 
 	// ── Analisi posizione ─────────────────────────────────────────────────────────
-	async function analyzePosition(fen: string) {
-		if (!engine || !engineReady || analyzing) return;
+	// Annulla analisi in corso e riavvia (evita sovrapposizioni)
+	async function analyze(fen: string, showArrow: boolean) {
+		if (!engine || !engineReady) return;
+		if (analyzing) engine.stop();   // ferma la precedente
 		bestArrow   = null;
 		bestExplain = '';
 		analyzing   = true;
 		try {
-			const res = await engine.analyze(fen, 16);
+			const res = await engine.analyze(fen, 12);   // depth 12: rapido e accurato
 			evalResult = res;
-		} finally {
-			analyzing = false;
-		}
-	}
-
-	async function showBestMove(fen: string) {
-		if (!engine || !engineReady || analyzing) return;
-		bestArrow   = null;
-		bestExplain = '';
-		analyzing   = true;
-		try {
-			const res = await engine.analyze(fen, 16);
-			evalResult = res;
-			if (res.bestMove && res.bestMove !== '(none)') {
+			if (showArrow && res.bestMove && res.bestMove !== '(none)') {
 				const from = res.bestMove.slice(0, 2);
 				const to   = res.bestMove.slice(2, 4);
 				bestArrow   = { from, to, color: '#00bcd4' };
 				bestExplain = explainMove(fen, res.bestMove);
 			}
+		} catch {
+			// engine fermato / posizione non valida — ignora
 		} finally {
 			analyzing = false;
 		}
 	}
+
+	// Shortcut pubblico per il bottone — sempre mostra freccia
+	function requestBestMove() { analyze(currentFen, true); }
+
+	// Auto-analisi silenziosa (solo eval, no freccia) quando cambia posizione
+	$effect(() => {
+		const fen = currentFen;
+		if (!engineReady) return;
+		// piccolo debounce: aspetta che Svelte finisca il rendering
+		const t = setTimeout(() => analyze(fen, false), 120);
+		return () => clearTimeout(t);
+	});
+
+	// Deprecato ma mantenuto per compatibilità chiamate esistenti nel template
+	const analyzePosition = (fen: string) => analyze(fen, false);
+	const showBestMove    = (fen: string) => analyze(fen, true);
 
 	// Template-based explanation
 	function explainMove(fen: string, uci: string): string {
@@ -420,8 +427,16 @@
 		mode === 'opening' ? fenOp : INITIAL_FEN
 	);
 
-	// ── Keyboard navigation (tutte le modalità con storia) ───────────────────────
+	// ── Keyboard navigation + shortcuts ─────────────────────────────────────────
 	function handleKey(e: KeyboardEvent) {
+		// H → mossa migliore (solo se non si sta scrivendo in un input)
+		if (e.key === 'h' || e.key === 'H') {
+			if ((e.target as HTMLElement).tagName === 'INPUT' ||
+				(e.target as HTMLElement).tagName === 'TEXTAREA') return;
+			e.preventDefault();
+			requestBestMove();
+			return;
+		}
 		if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) return;
 		e.preventDefault();
 		if (mode === 'pgn') {
@@ -439,6 +454,21 @@
 			if (e.key === 'ArrowRight') navOp(idxOp + 1);
 			if (e.key === 'ArrowUp')    navOp(0);
 			if (e.key === 'ArrowDown')  navOp(historyOp.length - 1);
+		}
+	}
+
+	// ── Scroll wheel: naviga mosse ────────────────────────────────────────────────
+	function handleWheel(e: WheelEvent) {
+		// Solo se il cursore è sopra la scacchiera (non sul pannello)
+		const target = e.target as HTMLElement;
+		if (!target.closest('.cpl-board-sizer')) return;
+		e.preventDefault();
+		if (mode === 'pgn') {
+			e.deltaY > 0 ? pgNext() : pgPrev();
+		} else if (mode === 'free-a') {
+			e.deltaY > 0 ? navA(idxA + 1) : navA(idxA - 1);
+		} else if (mode === 'opening') {
+			e.deltaY > 0 ? navOp(idxOp + 1) : navOp(idxOp - 1);
 		}
 	}
 
@@ -514,7 +544,7 @@
 <svelte:head>
 	<title>Chess — {$t.nav.learn}</title>
 </svelte:head>
-<svelte:window onkeydown={handleKey} />
+<svelte:window onkeydown={handleKey} onwheel={handleWheel} />
 
 <div class="learn-page">
 
@@ -645,9 +675,10 @@
 							<span class="eval-desc">{evalText}</span>
 						</div>
 					{/if}
-					<button class="hint-btn" onclick={() => showBestMove(fenA)}
-						disabled={!engineReady || analyzing}>
-						{analyzing ? '⏳ Analisi…' : '💡 Miglior Mossa'}
+					<button class="hint-btn" onclick={requestBestMove}
+						disabled={!engineReady || analyzing}
+						title="Shortcut: H">
+						{analyzing ? '⏳ Analisi…' : '💡 Miglior Mossa  [H]'}
 					</button>
 					{#if bestExplain}
 						<div class="explain-box">
@@ -748,9 +779,10 @@
 							<span class="eval-desc">{evalText}</span>
 						</div>
 					{/if}
-					<button class="hint-btn" onclick={() => showBestMove(setupFen)}
-						disabled={!engineReady || analyzing}>
-						{analyzing ? '⏳ Analisi…' : '💡 Miglior Mossa'}
+					<button class="hint-btn" onclick={requestBestMove}
+						disabled={!engineReady || analyzing}
+						title="Shortcut: H">
+						{analyzing ? '⏳ Analisi…' : '💡 Miglior Mossa  [H]'}
 					</button>
 					{#if bestExplain}
 						<div class="explain-box"><span class="explain-arrow">→</span>{bestExplain}</div>
@@ -827,8 +859,9 @@
 						{/if}
 
 						<button class="hint-btn" onclick={showTheoryMove}
-							disabled={!engineReady || analyzing}>
-							{analyzing ? '⏳ Analisi…' : '📚 Mossa Teorica / Migliore'}
+							disabled={!engineReady || analyzing}
+							title="Shortcut: H">
+							{analyzing ? '⏳ Analisi…' : '📚 Mossa Teorica / Migliore  [H]'}
 						</button>
 
 						{#if bestExplain || theoryArrow}
