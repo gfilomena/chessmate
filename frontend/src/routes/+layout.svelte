@@ -19,25 +19,11 @@
 	let userMenuOpen     = $state(false);
 	let sidebarCollapsed = $state(false);
 
-	// Deploy badge (solo admin)
-	let deployVersion = $state('');
-	let deployDate    = $state('');
-	onMount(async () => {
-		try {
-			const r = await fetch('/_app/version.json');
-			if (r.ok) {
-				const j = await r.json();
-				const ts = parseInt(j.version, 10);
-				deployVersion = j.version ?? '';
-				if (!isNaN(ts)) {
-					deployDate = new Date(ts).toLocaleString('it-IT', {
-						day: '2-digit', month: '2-digit', year: '2-digit',
-						hour: '2-digit', minute: '2-digit'
-					});
-				}
-			}
-		} catch {}
-	});
+	// Deploy badge (solo admin) — valori iniettati da Vite a build-time
+	declare const __GIT_HASH__: string;
+	declare const __GIT_DATE__: string;
+	const deployVersion = __GIT_HASH__;
+	const deployDate    = __GIT_DATE__;
 
 	// Route che richiedono autenticazione
 	const PROTECTED_PREFIXES = ['/play', '/learn', '/game', '/analysis', '/leaderboard', '/profile', '/admin', '/settings'];
@@ -229,7 +215,7 @@
 <CookieBanner />
 
 <!-- Deploy badge — solo admin -->
-{#if $user?.is_admin && deployVersion}
+{#if $user?.is_admin}
 <div class="deploy-badge" title="Versione deploy in produzione">
 	🚀 {deployDate} · <span class="deploy-ver">{deployVersion}</span>
 </div>
