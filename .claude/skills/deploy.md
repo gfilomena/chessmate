@@ -53,7 +53,16 @@ echo ""
 echo "⚠️  Timeout dopo ${MAX}s — verifica manualmente su https://dashboard.render.com"
 ```
 
-### 5. Mostra commit deployato
+### 5. Messaggio finale
+
+Quando il deploy è confermato live, scrivi **nella risposta** (non solo come output bash) il messaggio con la versione, in questo formato esatto:
+
+> ✅ Deploy live — `<VERSIONE>` · `<DATA>`
+
+Esempio:
+> ✅ Deploy live — `1780389091592` · 02/06/26 15:42
+
+Poi mostra il commit deployato:
 
 ```bash
 git -C /Users/giuseppefilomena/projects/chess-clone log -1 --oneline
