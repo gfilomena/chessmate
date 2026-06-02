@@ -34,43 +34,62 @@ export class StockfishEngine {
 	/**
 	 * Analizza una posizione FEN.
 	 * Il punteggio è sempre normalizzato dalla prospettiva del Bianco.
+	 *
+	 * Gestisce correttamente la sequenza stop → go: se c'è già un'analisi
+	 * in corso, manda stop e aspetta il bestmove di conferma prima di
+	 * avviare la nuova analisi. Questo evita la race condition in cui il
+	 * bestmove dello stop viene scambiato per il risultato della nuova analisi.
 	 */
 	analyze(fen: string, depth = 16): Promise<AnalysisResult> {
 		return new Promise((resolve) => {
 			let best: Partial<AnalysisResult> = {};
+			const wasAnalyzing = this.onMessage !== null;
 
-			this.onMessage = (msg: string) => {
-				if (msg.startsWith('info') && msg.includes('score') && msg.includes('pv')) {
-					const parsed = parseInfo(msg);
-					if (parsed && (parsed.depth ?? 0) > (best.depth ?? 0)) {
-						best = parsed;
+			const startAnalysis = () => {
+				best = {};
+				this.onMessage = (msg: string) => {
+					if (msg.startsWith('info') && msg.includes('score') && msg.includes('pv')) {
+						const parsed = parseInfo(msg);
+						if (parsed && (parsed.depth ?? 0) > (best.depth ?? 0)) {
+							best = parsed;
+						}
 					}
-				}
 
-				if (msg.startsWith('bestmove')) {
-					const parts = msg.split(' ');
-					const bestMove = parts[1] ?? '';
-					this.onMessage = null;
+					if (msg.startsWith('bestmove')) {
+						const parts = msg.split(' ');
+						const bestMove = parts[1] ?? '';
+						this.onMessage = null;
 
-					// Normalizza score in prospettiva bianco
-					// (Stockfish dà score dal lato di chi muove)
-					const turn = fen.split(' ')[1]; // 'w' o 'b'
-					const rawScore = best.score ?? 0;
-					const normalizedScore = turn === 'w' ? rawScore : -rawScore;
+						const turn = fen.split(' ')[1]; // 'w' o 'b'
+						const rawScore = best.score ?? 0;
+						const normalizedScore = turn === 'w' ? rawScore : -rawScore;
 
-					resolve({
-						depth: best.depth ?? 0,
-						score: normalizedScore,
-						isMate: best.isMate ?? false,
-						mateIn: best.mateIn ?? null,
-						bestMove,
-						pv: best.pv ?? []
-					});
-				}
+						resolve({
+							depth: best.depth ?? 0,
+							score: normalizedScore,
+							isMate: best.isMate ?? false,
+							mateIn: best.mateIn ?? null,
+							bestMove,
+							pv: best.pv ?? []
+						});
+					}
+				};
+
+				this.send(`position fen ${fen}`);
+				this.send(`go depth ${depth}`);
 			};
 
-			this.send(`position fen ${fen}`);
-			this.send(`go depth ${depth}`);
+			if (wasAnalyzing) {
+				// Aspetta il bestmove di conferma dello stop prima di ripartire
+				this.onMessage = (msg: string) => {
+					if (msg.startsWith('bestmove')) {
+						startAnalysis();
+					}
+				};
+				this.send('stop');
+			} else {
+				startAnalysis();
+			}
 		});
 	}
 
@@ -120,7 +139,10 @@ export class StockfishEngine {
 	}
 
 	stop() {
-		this.send('stop');
+		if (this.onMessage) {
+			this.onMessage = null; // abbandona il risultato parziale
+			this.send('stop');
+		}
 	}
 
 	destroy() {
