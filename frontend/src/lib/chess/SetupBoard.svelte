@@ -239,8 +239,11 @@
 		grid-template-columns: repeat(8, 1fr);
 		grid-template-rows: repeat(8, 1fr);
 		border: 3px solid #1a1714;
-		border-radius: 4px;
+		border-radius: 2px;
 		overflow: hidden;
+		box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+		user-select: none;
+		touch-action: none;
 	}
 
 	.sq {
@@ -253,10 +256,12 @@
 		cursor: pointer;
 		outline: none;
 		touch-action: none;
+		-webkit-tap-highlight-color: transparent;
+		-webkit-touch-callout: none;
 		transition: filter 0.1s;
 	}
-	.sq.light { background: #f0d9b5; }
-	.sq.dark  { background: #b58863; }
+	.sq.light { background: #F0D9B5; }
+	.sq.dark  { background: #B58863; }
 
 	.sq.selected       { outline: 3px solid rgba(255,220,0,0.9); outline-offset: -3px; }
 	.sq.dragging-from  { opacity: 0.25; }
@@ -266,9 +271,11 @@
 
 	/* Pezzi */
 	.piece {
-		width: 86%; height: 86%;
+		width: 90%; height: 90%;
 		display: flex; align-items: center; justify-content: center;
 		pointer-events: none;
+		filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+		transition: opacity 0.05s;
 	}
 	.piece :global(svg) { width: 100%; height: 100%; }
 	.piece.sel { filter: drop-shadow(0 0 6px rgba(255,220,0,0.95)); }
@@ -287,14 +294,13 @@
 	/* Coordinate */
 	.rank-label, .file-label {
 		position: absolute;
-		font-size: clamp(0.38rem, 1.1vw, 0.6rem);
+		font-size: clamp(8px, 1.2vw, 11px);
 		font-weight: 700;
 		pointer-events: none;
 		line-height: 1;
-		opacity: 0.7;
-		color: #b58863;
+		color: #B58863;
 	}
-	.rank-label.on-dark, .file-label.on-dark { color: #f0d9b5; }
+	.rank-label.on-dark, .file-label.on-dark { color: #F0D9B5; }
 	.rank-label { top: 2px; left: 3px; }
 	.file-label { bottom: 2px; right: 3px; }
 
