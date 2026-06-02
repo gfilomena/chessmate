@@ -66,19 +66,63 @@
 		}
 	}
 
-	// Shortcut pubblico per il bottone — sempre mostra freccia
-	function requestBestMove() { analyze(currentFen, true); }
+	// ── Hint → auto-play logic ───────────────────────────────────────────────────
+	// hintPending: true se l'utente ha già visto la freccia senza muovere
+	let hintPending = $state(false);
+	let pendingUci  = $state('');   // mossa migliore mostrata come hint
+
+	// Quando l'utente muove (qualsiasi modalità), resetta lo stato hint
+	function clearHint() { hintPending = false; pendingUci = ''; }
+
+	// Esegue la mossa UCI sulla modalità corrente (libero o apertura)
+	function playBestMoveNow() {
+		if (!pendingUci) return;
+		const from  = pendingUci.slice(0, 2);
+		const to    = pendingUci.slice(2, 4);
+		const promo = pendingUci[4] ?? undefined;
+		if (mode === 'free-a')  handleFreeMove(from, to, promo);
+		if (mode === 'opening') handleOpeningMove(from, to, promo);
+		// pgn e setup: non ha senso eseguire automaticamente
+		clearHint();
+	}
+
+	// Primo press → mostra freccia. Secondo press (no mossa) → esegue la mossa.
+	async function requestBestMove() {
+		if (hintPending && pendingUci) {
+			// Secondo press: gioca la mossa
+			playBestMoveNow();
+			return;
+		}
+		// Primo press: analizza e mostra freccia
+		if (!engine || !engineReady) return;
+		if (analyzing) engine.stop();
+		bestArrow   = null;
+		bestExplain = '';
+		analyzing   = true;
+		try {
+			const res = await engine.analyze(currentFen, 12);
+			evalResult = res;
+			if (res.bestMove && res.bestMove !== '(none)') {
+				const from = res.bestMove.slice(0, 2);
+				const to   = res.bestMove.slice(2, 4);
+				bestArrow    = { from, to, color: '#00bcd4' };
+				bestExplain  = explainMove(currentFen, res.bestMove);
+				hintPending  = true;
+				pendingUci   = res.bestMove;
+			}
+		} catch {}
+		finally { analyzing = false; }
+	}
 
 	// Auto-analisi silenziosa (solo eval, no freccia) quando cambia posizione
 	$effect(() => {
 		const fen = currentFen;
 		if (!engineReady) return;
-		// piccolo debounce: aspetta che Svelte finisca il rendering
 		const t = setTimeout(() => analyze(fen, false), 120);
 		return () => clearTimeout(t);
 	});
 
-	// Deprecato ma mantenuto per compatibilità chiamate esistenti nel template
+	// Deprecato ma mantenuto per compatibilità chiamate nel template
 	const analyzePosition = (fen: string) => analyze(fen, false);
 	const showBestMove    = (fen: string) => analyze(fen, true);
 
@@ -170,6 +214,7 @@
 		historyA   = [...historyA.slice(0, idxA + 1), entry];
 		idxA       = historyA.length - 1;
 		evalResult = null; bestArrow = null; bestExplain = '';
+		clearHint();
 	}
 
 	function navA(i: number) {
@@ -384,6 +429,7 @@
 		historyOp  = [...historyOp.slice(0, idxOp + 1), entry];
 		idxOp      = historyOp.length - 1;
 		evalResult = null; bestArrow = null; bestExplain = ''; theoryArrow = null;
+		clearHint();
 		_updateOpeningDetection(historyOp.slice(1).map(e => e.san));
 	}
 
@@ -677,8 +723,11 @@
 					{/if}
 					<button class="hint-btn" onclick={requestBestMove}
 						disabled={!engineReady || analyzing}
+						class:play-hint={hintPending}
 						title="Shortcut: H">
-						{analyzing ? '⏳ Analisi…' : '💡 Miglior Mossa  [H]'}
+						{#if analyzing}⏳ Analisi…
+						{:else if hintPending}▶ Esegui mossa  [H]
+						{:else}💡 Miglior Mossa  [H]{/if}
 					</button>
 					{#if bestExplain}
 						<div class="explain-box">
@@ -781,8 +830,11 @@
 					{/if}
 					<button class="hint-btn" onclick={requestBestMove}
 						disabled={!engineReady || analyzing}
+						class:play-hint={hintPending}
 						title="Shortcut: H">
-						{analyzing ? '⏳ Analisi…' : '💡 Miglior Mossa  [H]'}
+						{#if analyzing}⏳ Analisi…
+						{:else if hintPending}▶ Esegui mossa  [H]
+						{:else}💡 Miglior Mossa  [H]{/if}
 					</button>
 					{#if bestExplain}
 						<div class="explain-box"><span class="explain-arrow">→</span>{bestExplain}</div>
@@ -1082,6 +1134,14 @@
 	}
 	.hint-btn:hover:not(:disabled) { opacity: 0.88; }
 	.hint-btn:disabled { opacity: 0.45; cursor: default; }
+	.hint-btn.play-hint {
+		background: #00bcd4;   /* stesso colore della freccia */
+		animation: pulse-hint 1.2s ease-in-out infinite;
+	}
+	@keyframes pulse-hint {
+		0%, 100% { box-shadow: 0 0 0 0 rgba(0,188,212,0); }
+		50%       { box-shadow: 0 0 0 6px rgba(0,188,212,0.25); }
+	}
 	.eval-btn {
 		background: var(--bg-input);
 		border: 1px solid var(--border);
