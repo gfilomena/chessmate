@@ -183,7 +183,7 @@
 					<span>{$t.nav.leaderboard}</span>
 				</a>
 				<a href="/settings" class="nav-item" class:active={isActive('/settings')} onclick={() => sidebarOpen = false}>
-					<span class="nav-icon">⚙️</span>
+					<span class="nav-icon">🎨</span>
 					<span>{$t.nav.settings}</span>
 				</a>
 				{#if $user?.is_admin}
