@@ -110,7 +110,7 @@
 			dragX = me.clientX;
 			dragY = me.clientY;
 
-			if (!isDragging && dragSvg) {
+			if (!isDragging && (dragSvg || dragPiece)) {
 				const dx = me.clientX - ptrStartX;
 				const dy = me.clientY - ptrStartY;
 				if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {

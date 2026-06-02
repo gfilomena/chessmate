@@ -290,7 +290,7 @@
 			dragY = me.clientY;
 
 			// Only enter drag mode if there's an own piece to drag
-			if (!isDragActive && dragSvg) {
+			if (!isDragActive && (dragSvg || dragCode)) {
 				const dx = me.clientX - ptrStartX;
 				const dy = me.clientY - ptrStartY;
 				if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
