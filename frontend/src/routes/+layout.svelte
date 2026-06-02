@@ -194,9 +194,9 @@
 			<button
 				class="sidebar-toggle"
 				onclick={() => sidebarCollapsed = !sidebarCollapsed}
-				title={sidebarCollapsed ? 'Espandi menu' : 'Comprimi menu'}
+				title={sidebarCollapsed ? $t.sidebar.expand : $t.sidebar.collapse}
 			>
-				<span class="sidebar-toggle-label">{sidebarCollapsed ? '' : 'Comprimi'}</span>
+				<span class="sidebar-toggle-label">{sidebarCollapsed ? '' : $t.sidebar.collapse}</span>
 				{sidebarCollapsed ? '▶' : '◀'}
 			</button>
 		</aside>

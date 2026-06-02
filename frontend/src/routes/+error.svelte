@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { user, authLoading } from '$lib/stores/auth';
+	import { t } from '$lib/i18n';
 
 	const status = $derived($page.status);
 	const message = $derived($page.error?.message ?? 'Errore sconosciuto');
@@ -48,16 +49,16 @@
 		</div>
 		<h1 class="error-title">
 			{#if status === 404}
-				Pagina non trovata
+				{$t.error_page.not_found}
 			{:else if status === 403}
-				Accesso negato
+				{$t.error_page.forbidden}
 			{:else}
-				Qualcosa è andato storto
+				{$t.error_page.generic}
 			{/if}
 		</h1>
 		<p class="error-sub">
 			{#if status === 404}
-				Questa pagina non esiste o è stata spostata.
+				{$t.error_page.not_found_desc}
 			{:else}
 				{message}
 			{/if}
@@ -65,9 +66,9 @@
 
 		{#if !$authLoading}
 			<button class="btn btn-primary" onclick={goNow}>
-				{!$user || status === 404 ? 'Vai al login' : 'Torna alla home'}
+				{!$user || status === 404 ? $t.error_page.go_login : $t.error_page.go_home}
 			</button>
-			<p class="countdown">Redirect automatico tra {countdown}s…</p>
+			<p class="countdown">{$t.error_page.redirect(countdown)}</p>
 		{/if}
 	</div>
 </div>

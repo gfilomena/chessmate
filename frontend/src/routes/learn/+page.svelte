@@ -27,10 +27,10 @@
 		: 50);
 	const evalText = $derived.by(() => {
 		if (!evalResult) return '';
-		if (evalResult.isMate) return `Matto in ${Math.abs(evalResult.mateIn!)}`;
+		if (evalResult.isMate) return $t.learn.mate_in(Math.abs(evalResult.mateIn!));
 		const p = evalResult.score / 100;
-		if (Math.abs(p) < 0.3) return 'Posizione pari';
-		return p > 0 ? 'Bianco in vantaggio' : 'Nero in vantaggio';
+		if (Math.abs(p) < 0.3) return $t.learn.eval_even;
+		return p > 0 ? $t.learn.eval_white_adv : $t.learn.eval_black_adv;
 	});
 	let evalScore = $derived(evalResult ? formatScore(evalResult as any) : '0.0');
 
@@ -147,26 +147,27 @@
 
 			const CENTER = ['e4','e5','d4','d5'];
 			const EXTENDED = ['c3','c4','c5','c6','d3','d4','d5','d6','e3','e4','e5','e6','f3','f4','f5','f6'];
-			const pieceIt: Record<string, string> = {
-				k: 'il re', q: 'la donna', r: 'la torre', b: "l'alfiere", n: 'il cavallo', p: 'il pedone'
+			const pieceNames: Record<string, string> = {
+				k: $t.learn.piece_king, q: $t.learn.piece_queen, r: $t.learn.piece_rook,
+				b: $t.learn.piece_bishop, n: $t.learn.piece_knight, p: $t.learn.piece_pawn
 			};
 
-			if (isCheck && isCapture) return `Cattura con scacco! Eccellente mossa tattica che guadagna materiale mettendo sotto pressione.`;
-			if (isCheck)   return `Mette il re avversario sotto scacco, costringendolo a rispondere immediatamente.`;
-			if (isCapture) return `Cattura ${pieceIt[capture.type] ?? 'un pezzo'} avversario, guadagnando materiale.`;
-			if (uci.length === 5) return `Promozione del pedone a donna — vantaggio decisivo!`;
-			if (piece?.type === 'p' && CENTER.includes(to)) return `Avanza il pedone al centro, assumendo il controllo delle caselle chiave.`;
+			if (isCheck && isCapture) return $t.learn.explain_capture_check;
+			if (isCheck)   return $t.learn.explain_check;
+			if (isCapture) return $t.learn.explain_capture(pieceNames[capture.type] ?? capture.type);
+			if (uci.length === 5) return $t.learn.explain_promotion;
+			if (piece?.type === 'p' && CENTER.includes(to)) return $t.learn.explain_center_pawn;
 			if (piece?.type === 'n' || piece?.type === 'b') {
 				const isDevMove = from[1] === (piece.color === 'w' ? '1' : '8');
-				if (isDevMove) return `Sviluppa ${pieceIt[piece.type]} migliorando la coordinazione dei pezzi e accelerando l'arrocco.`;
-				return `Riposiziona ${pieceIt[piece.type]} in una casella più attiva.`;
+				if (isDevMove) return $t.learn.explain_develop(pieceNames[piece.type]);
+				return $t.learn.explain_reposition(pieceNames[piece.type]);
 			}
 			if (piece?.type === 'k' && Math.abs(from.charCodeAt(0) - to.charCodeAt(0)) === 2)
-				return `Arroca il re al sicuro dietro i pedoni, connettendo le torri.`;
-			if (EXTENDED.includes(to)) return `Occupa il centro allargato, guadagnando spazio e mobilità.`;
-			return `La mossa migliore in questa posizione secondo il motore Stockfish.`;
+				return $t.learn.explain_castle;
+			if (EXTENDED.includes(to)) return $t.learn.explain_center;
+			return $t.learn.explain_best;
 		} catch {
-			return `La mossa migliore secondo il motore Stockfish.`;
+			return $t.learn.explain_fallback;
 		}
 	}
 
@@ -362,7 +363,7 @@
 			const temp = new Chess();
 			temp.loadPgn(pgnText.trim());
 			const history = temp.history({ verbose: true }) as any[];
-			const pos: PgnPos[] = [{ fen: new Chess().fen(), label: 'Inizio', from: '', to: '' }];
+			const pos: PgnPos[] = [{ fen: new Chess().fen(), label: $t.learn.pgn_start, from: '', to: '' }];
 			const replay = new Chess();
 			for (let i = 0; i < history.length; i++) {
 				const mv = history[i];
@@ -374,7 +375,7 @@
 			pgnIdx       = 0;
 			pgnLoaded    = true;
 		} catch {
-			pgnError = 'PGN non valido — controlla il formato e riprova.';
+			pgnError = $t.learn.pgn_error;
 		}
 	}
 
@@ -460,7 +461,7 @@
 			const mv = tmp.move(nextMoves[0]);
 			if (mv) {
 				theoryArrow = { from: mv.from, to: mv.to, color: '#4caf50' };
-				bestExplain = `Mossa teorica: ${mv.san} — prosegui sulla linea principale della ${selectedOpening.nameIt}.`;
+				bestExplain = $t.learn.theory_move_label(mv.san, selectedOpening.nameIt);
 			}
 		} catch { await showBestMove(fenOp); }
 	}
@@ -598,32 +599,32 @@
 	<div class="mode-bar">
 		<div class="mode-tabs">
 			<button class="mode-tab" class:active={mode==='free-a'} onclick={() => switchMode('free-a')}>
-				🎯 Libero
+				{$t.learn.mode_free}
 			</button>
 			<button class="mode-tab" class:active={mode==='setup'} onclick={() => switchMode('setup')}>
-				🔧 Setup
+				{$t.learn.mode_setup}
 			</button>
 			<button class="mode-tab" class:active={mode==='pgn'} onclick={() => switchMode('pgn')}>
-				📋 PGN
+				{$t.learn.mode_pgn}
 			</button>
 			<button class="mode-tab" class:active={mode==='opening'} onclick={() => switchMode('opening')}>
-				📚 Apertura
+				{$t.learn.mode_opening}
 			</button>
 		</div>
 		<button
 			class="flip-btn"
 			class:flipped
 			onclick={() => flipped = !flipped}
-			title="Ruota scacchiera"
+			title={$t.learn.flip_board}
 		>⇅</button>
 
 		<span class="engine-status" class:ready={engineReady}>
-			{engineReady ? '⚙ Stockfish pronto' : '⚙ Caricamento motore…'}
+			{engineReady ? $t.learn.engine_ready : $t.learn.engine_loading}
 		</span>
 	</div>
 
 	<!-- ── Layout principale ──────────────────────────────────────────────── -->
-	<ChessPageLayout panelTitle="Info & Analisi">
+	<ChessPageLayout panelTitle={$t.learn.panel_title}>
 
 		{#snippet evalBar()}
 			<div class="eval-bar-wrap" title="{evalScore} — {evalText}">
@@ -693,10 +694,10 @@
 
 				<div class="unified-actions">
 					<button class="action-btn" onclick={tlUndo} disabled={!tlCanUndo}>
-						↩ Annulla
+						{$t.learn.undo}
 					</button>
 					<button class="action-btn danger" onclick={tlReset} disabled={!tlCanReset}>
-						↺ Reset
+						{$t.learn.reset}
 					</button>
 				</div>
 			{/if}
@@ -706,9 +707,9 @@
 				<div class="panel-card">
 					<div class="turn-row" class:black={turnA === 'black'}>
 						<span class="turn-dot"></span>
-						<span>Turno: <strong>{turnA === 'white' ? '⬜ Bianco' : '⬛ Nero'}</strong></span>
+						<span>{$t.learn.turn_label} <strong>{turnA === 'white' ? $t.learn.turn_white : $t.learn.turn_black}</strong></span>
 					</div>
-					<p class="panel-hint">Muovi qualsiasi pezzo di entrambi i colori in qualsiasi ordine.</p>
+					<p class="panel-hint">{$t.learn.free_hint}</p>
 				</div>
 
 				<!-- Engine panel -->
@@ -724,10 +725,10 @@
 					<button class="hint-btn" onclick={requestBestMove}
 						disabled={!engineReady || analyzing}
 						class:play-hint={hintPending}
-						title="Shortcut: H">
-						{#if analyzing}⏳ Analisi…
-						{:else if hintPending}▶ Esegui mossa  [H]
-						{:else}💡 Miglior Mossa  [H]{/if}
+						title={$t.learn.shortcut_h}>
+						{#if analyzing}{$t.learn.analyzing}
+						{:else if hintPending}{$t.learn.best_move_play}
+						{:else}{$t.learn.best_move_hint}{/if}
 					</button>
 					{#if bestExplain}
 						<div class="explain-box">
@@ -739,7 +740,7 @@
 
 				{#if sanHistA.length > 0}
 					<div class="panel-card moves-log">
-						<p class="panel-label">Mosse</p>
+						<p class="panel-label">{$t.learn.moves_label}</p>
 						<div class="free-moves">
 							{#each sanHistA as san, i}
 								{#if i % 2 === 0}<span class="move-num">{Math.floor(i/2)+1}.</span>{/if}
@@ -752,18 +753,18 @@
 			<!-- ── SETUP ──────────────────────────────────────────── -->
 			{:else if mode === 'setup'}
 				<div class="panel-card palette-card">
-					<p class="panel-label">Palette pezzi</p>
+					<p class="panel-label">{$t.learn.palette_label}</p>
 					<p class="panel-hint">
 						{#if selectedPiece}
-							<strong style="color:var(--accent)">Pezzo selezionato — clicca una casella o trascinalo sulla scacchiera</strong>
+							<strong style="color:var(--accent)">{$t.learn.palette_hint_select}</strong>
 						{:else}
-							Clicca o trascina un pezzo sulla scacchiera. <br/>Tasto destro per rimuovere.
+							{$t.learn.palette_hint_idle}
 						{/if}
 					</p>
 
 					<!-- Pezzi bianchi -->
 					<div class="palette-section">
-						<span class="palette-color-label">⬜ Bianchi</span>
+						<span class="palette-color-label">{$t.learn.pieces_white}</span>
 						<div class="palette-row">
 							{#each PALETTE_W as code}
 								<button
@@ -780,7 +781,7 @@
 
 					<!-- Pezzi neri -->
 					<div class="palette-section">
-						<span class="palette-color-label">⬛ Neri</span>
+						<span class="palette-color-label">{$t.learn.pieces_black}</span>
 						<div class="palette-row">
 							{#each PALETTE_B as code}
 								<button
@@ -797,23 +798,23 @@
 
 					{#if selectedPiece}
 						<button class="deselect-btn" onclick={() => selectedPiece = null}>
-							✕ Deseleziona
+							{$t.learn.deselect}
 						</button>
 					{/if}
 
 					<div class="setup-turn-row">
-						<span class="palette-color-label" style="margin:0">Muove:</span>
+						<span class="palette-color-label" style="margin:0">{$t.learn.moves_label2}</span>
 						<label class="radio-opt">
-							<input type="radio" bind:group={setupTurn} value="w" /> ⬜ Bianco
+							<input type="radio" bind:group={setupTurn} value="w" /> {$t.learn.turn_white}
 						</label>
 						<label class="radio-opt">
-							<input type="radio" bind:group={setupTurn} value="b" /> ⬛ Nero
+							<input type="radio" bind:group={setupTurn} value="b" /> {$t.learn.turn_black}
 						</label>
 					</div>
 
 					<div class="free-actions">
-						<button class="action-btn" onclick={clearSetup}>🗑 Svuota</button>
-						<button class="action-btn danger" onclick={resetSetup}>↺ Reset</button>
+						<button class="action-btn" onclick={clearSetup}>{$t.learn.clear_board}</button>
+						<button class="action-btn danger" onclick={resetSetup}>{$t.learn.reset}</button>
 					</div>
 				</div>
 
@@ -827,10 +828,10 @@
 					<button class="hint-btn" onclick={requestBestMove}
 						disabled={!engineReady || analyzing}
 						class:play-hint={hintPending}
-						title="Shortcut: H">
-						{#if analyzing}⏳ Analisi…
-						{:else if hintPending}▶ Esegui mossa  [H]
-						{:else}💡 Miglior Mossa  [H]{/if}
+						title={$t.learn.shortcut_h}>
+						{#if analyzing}{$t.learn.analyzing}
+						{:else if hintPending}{$t.learn.best_move_play}
+						{:else}{$t.learn.best_move_hint}{/if}
 					</button>
 					{#if bestExplain}
 						<div class="explain-box"><span class="explain-arrow">→</span>{bestExplain}</div>
@@ -840,13 +841,13 @@
 			<!-- ── PGN ────────────────────────────────────────────── -->
 			{:else if mode === 'pgn'}
 				<div class="panel-card">
-					<p class="panel-label">Importa PGN</p>
+					<p class="panel-label">{$t.learn.pgn_label}</p>
 					<textarea class="pgn-textarea" bind:value={pgnText}
-						placeholder="Incolla qui il PGN…&#10;Es: 1. e4 e5 2. Nf3 Nc6 3. Bb5"
+						placeholder={$t.learn.pgn_placeholder}
 						rows="5"></textarea>
 					{#if pgnError}<p class="pgn-error">{pgnError}</p>{/if}
 					<button class="hint-btn" onclick={loadPgn} disabled={!pgnText.trim()}>
-						▶ Carica PGN
+						{$t.learn.pgn_load}
 					</button>
 				</div>
 
@@ -855,7 +856,7 @@
 						{#each pgnPositions as pos, i}
 							{#if i === 0}
 								<button class="move-chip" class:move-active={pgnIdx===0}
-									onclick={() => pgnIdx=0}>Inizio</button>
+									onclick={() => pgnIdx=0}>{$t.learn.pgn_start}</button>
 							{:else if (i-1)%2===0}
 								<span class="move-n">{Math.floor((i-1)/2)+1}.</span>
 								<button class="move-chip" class:move-active={pgnIdx===i}
@@ -871,12 +872,12 @@
 			<!-- ── APERTURA ───────────────────────────────────────── -->
 			{:else if mode === 'opening'}
 				<div class="panel-card">
-					<p class="panel-label">Scegli apertura</p>
+					<p class="panel-label">{$t.learn.opening_label}</p>
 					<select class="opening-select" onchange={(e) => {
 						const op = OPENINGS.find(o => o.eco + o.nameIt === (e.target as HTMLSelectElement).value);
 						if (op) selectOpening(op);
 					}}>
-						<option value="">— Seleziona un'apertura —</option>
+						<option value="">{$t.learn.opening_placeholder}</option>
 						{#each OPENINGS as op}
 							<option value={op.eco + op.nameIt}>{op.eco} — {op.nameIt}</option>
 						{/each}
@@ -892,26 +893,26 @@
 
 						{#if detectedOpening}
 							<div class="detected-badge">
-								✓ Rilevata: <strong>{detectedOpening.nameIt}</strong>
+								{$t.learn.opening_detected} <strong>{detectedOpening.nameIt}</strong>
 							</div>
 						{/if}
 
 						{#if theoryDeviation}
 							<div class="deviation-badge">
-								⚠ Fuori dalla linea teorica
+								{$t.learn.opening_deviation}
 							</div>
 						{/if}
 
 						<button class="hint-btn" onclick={showTheoryMove}
 							disabled={!engineReady || analyzing}
-							title="Shortcut: H">
-							{analyzing ? '⏳ Analisi…' : '📚 Mossa Teorica / Migliore  [H]'}
+							title={$t.learn.shortcut_h}>
+							{analyzing ? $t.learn.analyzing : $t.learn.theory_move}
 						</button>
 
 						{#if bestExplain || theoryArrow}
 							<div class="explain-box">
 								<span class="explain-arrow">→</span>
-								{bestExplain || 'Freccia verde = mossa teorica consigliata.'}
+								{bestExplain || $t.learn.theory_arrow_hint}
 							</div>
 						{/if}
 					</div>
