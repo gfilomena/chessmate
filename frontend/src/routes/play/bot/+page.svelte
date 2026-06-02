@@ -7,6 +7,7 @@
 	import { StockfishEngine } from '$lib/chess/stockfish';
 	import { user, authLoading } from '$lib/stores/auth';
 	import { initSounds, playSound } from '$lib/chess/sounds';
+	import SoundControl from '$lib/chess/SoundControl.svelte';
 	import { computeCaptured } from '$lib/chess/captured';
 	import { t } from '$lib/i18n';
 	import { browser } from '$app/environment';
@@ -545,6 +546,8 @@
 			<button class="btn btn-google" style="width:100%;font-size:0.85rem" onclick={backToSetup}>
 				{$t.bot.back}
 			</button>
+
+			<SoundControl />
 		{/snippet}
 
 	</ChessPageLayout>

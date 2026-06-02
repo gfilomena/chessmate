@@ -9,6 +9,8 @@
 	import { StockfishEngine, evalToPercent, formatScore } from '$lib/chess/stockfish';
 	import { OPENINGS, detectOpening, openingStartFen, nextTheoreticalMoves, type Opening } from '$lib/chess/openings';
 	import ChessPageLayout from '$lib/chess/ChessPageLayout.svelte';
+	import SoundControl from '$lib/chess/SoundControl.svelte';
+	import { playSound, initSounds } from '$lib/chess/sounds';
 	import { t } from '$lib/i18n';
 
 	// ── Mode ─────────────────────────────────────────────────────────────────────
@@ -35,6 +37,7 @@
 	let evalScore = $derived(evalResult ? formatScore(evalResult as any) : '0.0');
 
 	onMount(async () => {
+		initSounds();
 		if (!browser) return;
 		engine = new StockfishEngine();
 		await engine.init();
@@ -211,7 +214,7 @@
 
 	function handleFreeMove(from: string, to: string, promo?: string) {
 		const entry = applyMove(fenA, from, to, promo);
-		if (!entry) return;
+		if (!entry) { playSound('illegal'); return; }
 		historyA   = [...historyA.slice(0, idxA + 1), entry];
 		idxA       = historyA.length - 1;
 		evalResult = null; bestArrow = null; bestExplain = '';
@@ -426,7 +429,7 @@
 
 	function handleOpeningMove(from: string, to: string, promo?: string) {
 		const entry = applyMove(fenOp, from, to, promo);
-		if (!entry) return;
+		if (!entry) { playSound('illegal'); return; }
 		historyOp  = [...historyOp.slice(0, idxOp + 1), entry];
 		idxOp      = historyOp.length - 1;
 		evalResult = null; bestArrow = null; bestExplain = ''; theoryArrow = null;
@@ -929,6 +932,7 @@
 				{/if}
 			{/if}
 
+		<SoundControl />
 		{/snippet}<!-- /panel snippet -->
 
 	</ChessPageLayout>
