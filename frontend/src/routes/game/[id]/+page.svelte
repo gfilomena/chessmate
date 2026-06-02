@@ -10,6 +10,7 @@
 	import { connectToGame, sendMove, sendResign, sendOfferDraw, sendDrawResponse, sendFlag, disconnect } from '$lib/ws/socket';
 	import { user } from '$lib/stores/auth';
 	import { initSounds, playSound, type SoundName } from '$lib/chess/sounds';
+	import SoundControl from '$lib/chess/SoundControl.svelte';
 	import { computeCaptured } from '$lib/chess/captured';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
@@ -306,6 +307,8 @@
 			{:else if $gameState.status === 'finished'}{$t.game.status_finished}
 			{/if}
 		</div>
+
+		<SoundControl />
 	{/snippet}
 
 </ChessPageLayout>
