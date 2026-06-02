@@ -120,28 +120,33 @@
 
 	/* ── Board col ── */
 	.cpl-board-col {
+		flex: 1;           /* prende tutto lo spazio rimasto (fisso, non dipende dal contenuto) */
+		min-width: 0;
+		min-height: 0;
 		display: flex;
 		flex-direction: column;
+		align-items: center;
 		gap: clamp(0.2rem, 0.4dvh, 0.4rem);
 		align-self: stretch;
-		min-height: 0;
 	}
 
 	.cpl-player-area {
 		flex-shrink: 0;
+		width: 100%;
 	}
 
 	.cpl-board-container {
 		flex: 1;
 		min-height: 0;
+		width: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
 
-	/* Sizer: controlla il sizing, Board/SetupBoard lo riempiono con width/height 100% */
+	/* Sizer: quadrato che occupa min(larghezza, altezza) del container */
 	.cpl-board-sizer {
-		position: relative;   /* ancora per gli overlay assoluti (risultato, attesa) */
+		position: relative;
 		height: 100%;
 		width: auto;
 		max-width: 100%;
