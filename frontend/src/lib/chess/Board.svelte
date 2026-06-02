@@ -278,10 +278,10 @@
 		}
 
 		// Prepare ghost only for own/free pieces (drag candidates)
-		// svg is null for non-cburnett sets — use dragCode for <img> ghost
-		if (isOwn && (svg || code)) {
+		// svg is null for non-cburnett sets — compute code directly here
+		if (isOwn && piece) {
 			dragSvg  = svg;
-			dragCode = code;
+			dragCode = `${piece.color}${piece.type.toUpperCase()}`;
 			if (boardEl) squareSize = boardEl.getBoundingClientRect().width / 8;
 		}
 
@@ -460,7 +460,7 @@
 					style={currentTheme.texture
 						? `background-image: url(${currentTheme.texture}); background-size: 800%; background-position: ${FILES.indexOf(file) * (100/7)}% ${(8 - rank) * (100/7)}%;`
 						: light ? `background: ${currentTheme.light}` : `background: ${currentTheme.dark}`}
-					onpointerdown={(e) => { if (e.button === 0) { clearUserMarkings(); onPtrDown(e, square, svg ?? code); } }}
+					onpointerdown={(e) => { if (e.button === 0) { clearUserMarkings(); onPtrDown(e, square, svg); } }}
 					aria-label={square}
 				>
 					<!-- Inside-board coordinate labels (chess.com style) -->
