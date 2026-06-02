@@ -735,9 +735,6 @@
 							{bestExplain}
 						</div>
 					{/if}
-					<button class="eval-btn" onclick={() => analyzePosition(fenA)}
-						disabled={!engineReady || analyzing}>
-						📊 Valuta posizione
 					</button>
 				</div>
 
@@ -839,9 +836,6 @@
 					{#if bestExplain}
 						<div class="explain-box"><span class="explain-arrow">→</span>{bestExplain}</div>
 					{/if}
-					<button class="eval-btn" onclick={() => analyzePosition(setupFen)}
-						disabled={!engineReady || analyzing}>
-						📊 Valuta posizione
 					</button>
 				</div>
 
@@ -931,9 +925,6 @@
 								<span class="eval-desc">{evalText}</span>
 							</div>
 						{/if}
-						<button class="eval-btn" onclick={() => analyzePosition(fenOp)}
-							disabled={!engineReady || analyzing}>
-							📊 Valuta posizione
 						</button>
 					</div>
 
@@ -1142,18 +1133,6 @@
 		0%, 100% { box-shadow: 0 0 0 0 rgba(0,188,212,0); }
 		50%       { box-shadow: 0 0 0 6px rgba(0,188,212,0.25); }
 	}
-	.eval-btn {
-		background: var(--bg-input);
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		color: var(--text-muted);
-		padding: 0.45rem 0.8rem;
-		font-size: 0.8rem;
-		cursor: pointer;
-		transition: border-color 0.15s;
-	}
-	.eval-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
-	.eval-btn:disabled { opacity: 0.4; cursor: default; }
 	.explain-box {
 		background: rgba(0,188,212,0.08);
 		border: 1px solid rgba(0,188,212,0.3);
