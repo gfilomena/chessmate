@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import logo from '$lib/assets/logo.png';
+	import logo from '$lib/assets/logo.svg';
 	import { user, authLoading } from '$lib/stores/auth';
 	import { t, lang, setLang, LANGS } from '$lib/i18n';
 	import { API_URL as API } from '$lib/config';
