@@ -8,6 +8,10 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 	}
+
+	// Vite build-time constants (injected via define in vite.config.ts)
+	const __GIT_HASH__: string;
+	const __GIT_DATE__: string;
 }
 
 export {};

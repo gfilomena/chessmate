@@ -19,9 +19,7 @@
 	let userMenuOpen     = $state(false);
 	let sidebarCollapsed = $state(false);
 
-	// Deploy badge (solo admin) — valori iniettati da Vite a build-time
-	declare const __GIT_HASH__: string;
-	declare const __GIT_DATE__: string;
+	// Deploy badge (solo admin) — valori iniettati da Vite a build-time (vite.config.ts define)
 	const deployVersion = __GIT_HASH__;
 	const deployDate    = __GIT_DATE__;
 
