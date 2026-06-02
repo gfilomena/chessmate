@@ -40,7 +40,7 @@
 	});
 
 	// Route che richiedono autenticazione
-	const PROTECTED_PREFIXES = ['/play', '/learn', '/game', '/analysis', '/leaderboard', '/profile', '/admin'];
+	const PROTECTED_PREFIXES = ['/play', '/learn', '/game', '/analysis', '/leaderboard', '/profile', '/admin', '/settings'];
 	const PUBLIC_PATHS = ['/', '/login', '/register', '/about', '/privacy', '/verify-email'];
 
 	function isProtected(path: string) {
@@ -181,6 +181,10 @@
 				<a href="/leaderboard" class="nav-item" class:active={isActive('/leaderboard')} onclick={() => sidebarOpen = false}>
 					<span class="nav-icon">🏆</span>
 					<span>{$t.nav.leaderboard}</span>
+				</a>
+				<a href="/settings" class="nav-item" class:active={isActive('/settings')} onclick={() => sidebarOpen = false}>
+					<span class="nav-icon">⚙️</span>
+					<span>{$t.nav.settings}</span>
 				</a>
 				{#if $user?.is_admin}
 					<div class="nav-divider"></div>

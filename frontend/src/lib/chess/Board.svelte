@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Chess } from 'chess.js';
 	import { PIECE_SVG, type PieceCode } from './pieces';
+	import { pieceSet, boardTheme, getBoardThemeMeta } from './boardSettings';
 
 	let {
 		fen,
@@ -174,11 +175,23 @@
 
 	function sq(f: string, r: number) { return `${f}${r}`; }
 
+	/** Returns inline SVG string (cburnett) or null to trigger <img> fallback. */
 	function pieceSvg(square: string): string | null {
 		const p = chess.get(square as any);
 		if (!p) return null;
-		return PIECE_SVG[`${p.color}${p.type.toUpperCase()}` as PieceCode] ?? null;
+		if ($pieceSet === 'cburnett') {
+			return PIECE_SVG[`${p.color}${p.type.toUpperCase()}` as PieceCode] ?? null;
+		}
+		return null; // use pieceImgSrc below
 	}
+
+	function pieceCode(square: string): string | null {
+		const p = chess.get(square as any);
+		if (!p) return null;
+		return `${p.color}${p.type.toUpperCase()}`;
+	}
+
+	const currentTheme = $derived(getBoardThemeMeta($boardTheme));
 
 	function isLight(f: string, r: number) { return (FILES.indexOf(f) + r) % 2 === 1; }
 	function isSel(s: string)    { return selectedSquare === s; }
@@ -423,8 +436,9 @@
 			{#each files as file}
 				{@const square   = sq(file, rank)}
 				{@const svg      = pieceSvg(square)}
+				{@const code     = pieceCode(square)}
 				{@const legal    = isLegal(square)}
-				{@const hasPiece = svg !== null}
+				{@const hasPiece = code !== null}
 				{@const light    = isLight(file, rank)}
 				{@const isDragSrc = dragFrom === square}
 				{@const isLifted  = liftedSquare === square && !isDragSrc}
@@ -437,7 +451,10 @@
 					class:selected={isSel(square)}
 					class:last-move={isLast(square)}
 					class:highlighted={isHighlighted}
-					onpointerdown={(e) => { if (e.button === 0) { clearUserMarkings(); onPtrDown(e, square, svg); } }}
+					style={currentTheme.texture
+						? `background-image: url(${currentTheme.texture}); background-size: 800%; background-position: ${FILES.indexOf(file) * (100/7)}% ${(8 - rank) * (100/7)}%;`
+						: light ? `background: ${currentTheme.light}` : `background: ${currentTheme.dark}`}
+					onpointerdown={(e) => { if (e.button === 0) { clearUserMarkings(); onPtrDown(e, square, svg ?? code); } }}
 					aria-label={square}
 				>
 					<!-- Inside-board coordinate labels (chess.com style) -->
@@ -453,6 +470,10 @@
 					<!-- Piece — faded at drag origin, lifted on first touch -->
 					{#if svg}
 						<span class="piece" class:is-drag-src={isDragSrc} class:lifted={isLifted}>{@html svg}</span>
+					{:else if code}
+						<span class="piece" class:is-drag-src={isDragSrc} class:lifted={isLifted}>
+							<img src="/pieces/{$pieceSet}/{code}.svg" alt={code} draggable="false" />
+						</span>
 					{/if}
 
 					<!-- Move classification badge (top-right corner) -->
@@ -557,17 +578,21 @@
 	}
 	.square:active { cursor: grabbing; }
 
-	.light { background: #F0D9B5; }
-	.dark  { background: #B58863; }
+	/* Base square colors set via inline style (board theme store) */
+	.light { /* color from theme */ }
+	.dark  { /* color from theme */ }
 
-	.light.selected  { background: #F6F669; }
-	.dark.selected   { background: #BACA2B; }
+	/* Overlays use pseudo-elements so they work on top of textures too */
+	.square { isolation: isolate; }
 
-	.light.last-move { background: #CDD26A; }
-	.dark.last-move  { background: #AAA23A; }
+	.light.selected::after,
+	.dark.selected::after    { content: ''; position: absolute; inset: 0; background: rgba(246,246,105,0.7); pointer-events: none; }
 
-	.light.highlighted { background: rgba(235, 97, 0, 0.5); }
-	.dark.highlighted  { background: rgba(235, 97, 0, 0.65); }
+	.light.last-move::after,
+	.dark.last-move::after   { content: ''; position: absolute; inset: 0; background: rgba(205,210,106,0.6); pointer-events: none; }
+
+	.light.highlighted::after,
+	.dark.highlighted::after { content: ''; position: absolute; inset: 0; background: rgba(235,97,0,0.55); pointer-events: none; }
 
 	/* ── Coordinate labels (inside board) ───────────────────────── */
 	.coord {
@@ -580,10 +605,17 @@
 	}
 	.rank-coord { top: 2px;    left: 3px;  }
 	.file-coord { bottom: 2px; right: 3px; }
-	.on-light   { color: #B58863; }
-	.on-dark    { color: #F0D9B5; }
+	/* coord colors adapt via CSS vars set on .board wrapper */
+	.on-light   { color: var(--coord-on-light, #B58863); }
+	.on-dark    { color: var(--coord-on-dark,  #F0D9B5); }
 
 	/* ── Piece ───────────────────────────────────────────────────── */
+	.piece img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		display: block;
+	}
 	.piece {
 		display: flex;
 		align-items: center;
