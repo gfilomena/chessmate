@@ -735,7 +735,6 @@
 							{bestExplain}
 						</div>
 					{/if}
-					</button>
 				</div>
 
 				{#if sanHistA.length > 0}
@@ -836,7 +835,6 @@
 					{#if bestExplain}
 						<div class="explain-box"><span class="explain-arrow">→</span>{bestExplain}</div>
 					{/if}
-					</button>
 				</div>
 
 			<!-- ── PGN ────────────────────────────────────────────── -->
@@ -925,7 +923,6 @@
 								<span class="eval-desc">{evalText}</span>
 							</div>
 						{/if}
-						</button>
 					</div>
 
 				{/if}
