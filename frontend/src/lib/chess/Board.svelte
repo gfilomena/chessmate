@@ -87,6 +87,14 @@
 	let dragY        = $state(0);
 	let squareSize   = $state(60);
 
+	// Zero-latency feedback: pezzo "sollevato" appena tocco il dito
+	let liftedSquare = $state<string | null>(null);
+
+	// Vibrazione aptika (Web Vibration API — funziona su Android Chrome)
+	function haptic(ms = 18) {
+		try { navigator.vibrate?.(ms); } catch {}
+	}
+
 	// ── Right-click arrow drawing (chess.com style) ────────────────
 	let drawnArrows   = $state<{ from: string; to: string }[]>([]);
 	let highlighted   = $state<string[]>([]); // caselle evidenziate (right-click senza drag)
@@ -243,6 +251,18 @@
 		dragX         = e.clientX;
 		dragY         = e.clientY;
 
+		// ── ZERO-LATENCY FEEDBACK ──────────────────────────────────────
+		if (isOwn) {
+			// 1. Solleva visivamente il pezzo SUBITO (stesso frame del touch)
+			liftedSquare = square;
+			// 2. Precalcola le mosse legali immediatamente (dot appaiono subito)
+			if (selectedSquare === null) {
+				legalTargets = computeLegalTargets(square);
+			}
+			// 3. Vibrazione aptika: feedback fisico immediato su Android
+			haptic(12);
+		}
+
 		// Prepare ghost only for own/free pieces (drag candidates)
 		if (isOwn && svg) {
 			dragSvg = svg;
@@ -270,6 +290,7 @@
 			document.removeEventListener('pointermove', onPtrMove);
 			document.removeEventListener('pointerup',   onPtrUp);
 			document.removeEventListener('pointercancel', onPtrCancel);
+			liftedSquare = null;
 
 			if (isDragActive) {
 				const from    = dragFrom!;
@@ -309,6 +330,7 @@
 			dragSvg        = null;
 			selectedSquare = null;
 			legalTargets   = [];
+			liftedSquare   = null;
 			ptrDownSquare  = null;
 			document.body.style.cursor = '';
 		}
@@ -345,6 +367,8 @@
 
 	// ── Shared move logic ──────────────────────────────────────────
 	function tryMove(from: string, to: string) {
+		liftedSquare = null;
+		haptic(25); // feedback di conferma mossa
 		const piece = chess.get(from as any);
 		const isPromo =
 			piece?.type === 'p' &&
@@ -403,6 +427,7 @@
 				{@const hasPiece = svg !== null}
 				{@const light    = isLight(file, rank)}
 				{@const isDragSrc = dragFrom === square}
+				{@const isLifted  = liftedSquare === square && !isDragSrc}
 				{@const isHighlighted = highlighted.includes(square)}
 				<button
 					data-sq={square}
@@ -425,9 +450,9 @@
 							class:on-light={light} class:on-dark={!light}>{file}</span>
 					{/if}
 
-					<!-- Piece — faded at the drag origin -->
+					<!-- Piece — faded at drag origin, lifted on first touch -->
 					{#if svg}
-						<span class="piece" class:is-drag-src={isDragSrc}>{@html svg}</span>
+						<span class="piece" class:is-drag-src={isDragSrc} class:lifted={isLifted}>{@html svg}</span>
 					{/if}
 
 					<!-- Move classification badge (top-right corner) -->
@@ -572,6 +597,14 @@
 	}
 	/* Fade the origin square while dragging */
 	.piece.is-drag-src { opacity: 0.15; }
+
+	/* Zero-latency lift: pezzo si solleva al primo tocco prima ancora del drag */
+	.piece.lifted {
+		transform: scale(1.18);
+		filter: drop-shadow(0 6px 16px rgba(0,0,0,0.55));
+		transition: transform 0.06s ease-out, filter 0.06s ease-out;
+		z-index: 2;
+	}
 
 	.piece :global(svg) { width: 100%; height: 100%; }
 
