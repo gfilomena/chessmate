@@ -238,7 +238,7 @@
 		display: grid;
 		grid-template-columns: repeat(8, 1fr);
 		grid-template-rows: repeat(8, 1fr);
-		border: 2px solid #5d4e37;
+		border: 3px solid #1a1714;
 		border-radius: 4px;
 		overflow: hidden;
 	}
