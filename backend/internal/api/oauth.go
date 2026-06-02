@@ -53,7 +53,12 @@ func (h *OAuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	token, err := h.config.Exchange(context.Background(), code)
 	if err != nil {
-		http.Error(w, "scambio token fallito", http.StatusInternalServerError)
+		errMsg := fmt.Sprintf("scambio token fallito: %v | redirect_url=%s | client_id=%s",
+			err,
+			h.config.RedirectURL,
+			h.config.ClientID,
+		)
+		http.Error(w, errMsg, http.StatusInternalServerError)
 		return
 	}
 
