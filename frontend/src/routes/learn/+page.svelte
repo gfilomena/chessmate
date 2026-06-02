@@ -6,6 +6,7 @@
 	import NavTimeline            from '$lib/chess/NavTimeline.svelte';
 	import SetupBoard             from '$lib/chess/SetupBoard.svelte';
 	import { PIECE_SVG, type PieceCode } from '$lib/chess/pieces';
+	import { pieceSet } from '$lib/chess/boardSettings';
 	import { StockfishEngine, evalToPercent, formatScore } from '$lib/chess/stockfish';
 	import { OPENINGS, detectOpening, openingStartFen, nextTheoreticalMoves, type Opening } from '$lib/chess/openings';
 	import ChessPageLayout from '$lib/chess/ChessPageLayout.svelte';
@@ -944,7 +945,11 @@
 		class="palette-drag-ghost"
 		style="left:{paletteDragX - 36}px; top:{paletteDragY - 36}px"
 	>
+		{#if $pieceSet === 'cburnett'}
 		{@html PIECE_SVG[paletteDragPiece as PieceCode] ?? ''}
+	{:else}
+		<img src="/pieces/{$pieceSet}/{paletteDragPiece}.svg" alt={paletteDragPiece} draggable="false" style="width:100%;height:100%;object-fit:contain" />
+	{/if}
 	</div>
 {/if}
 

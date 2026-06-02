@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { PIECE_SVG, type PieceCode } from './pieces';
+	import { pieceSet, boardTheme, getBoardThemeMeta } from './boardSettings';
 
 	let {
 		board,
@@ -28,6 +29,7 @@
 	let dragX          = $state(0);
 	let dragY          = $state(0);
 	let dragSvg        = $state<string | null>(null);
+	let dragPiece      = $state<string | null>(null);
 	let squareSize     = $state(60);
 	let hoveredSquare  = $state<string | null>(null);
 	let boardEl: HTMLElement | undefined;
@@ -101,6 +103,7 @@
 		dragX     = e.clientX;
 		dragY     = e.clientY;
 		dragSvg   = PIECE_SVG[board[square] as PieceCode] ?? null;
+		dragPiece = board[square] ?? null;
 		if (boardEl) squareSize = boardEl.getBoundingClientRect().width / 8;
 
 		function onPtrMove(me: PointerEvent) {
@@ -137,6 +140,7 @@
 
 				isDragging     = false;
 				dragSvg        = null;
+				dragPiece      = null;
 				selectedSquare = null;
 				document.body.style.cursor = '';
 
@@ -150,7 +154,8 @@
 					dragFrom = null;
 				}
 			} else {
-				dragSvg = null;
+				dragSvg   = null;
+				dragPiece = null;
 				handleTap(square);
 			}
 		}
@@ -162,6 +167,22 @@
 	$effect(() => {
 		document.body.style.cursor = isDragging ? 'grabbing' : '';
 	});
+
+	const currentTheme = $derived(getBoardThemeMeta($boardTheme));
+
+	function squareStyle(file: string, rank: number, light: boolean): string {
+		if (currentTheme.texture) {
+			const fx = FILES.indexOf(file) * (100/7);
+			const fy = (8 - rank) * (100/7);
+			return `background-image: url(${currentTheme.texture}); background-size: 800%; background-position: ${fx}% ${fy}%;`;
+		}
+		return light ? `background: ${currentTheme.light}` : `background: ${currentTheme.dark}`;
+	}
+
+	function pieceSrc(code: string): string | null {
+		if ($pieceSet === 'cburnett') return null;
+		return `/pieces/${$pieceSet}/${code}.svg`;
+	}
 </script>
 
 <div class="setup-board-wrap">
@@ -186,6 +207,7 @@
 					class:drop-target={isHov && isDragging}
 					class:palette-hover={!!activePalettePiece}
 					data-sq={square}
+					style={squareStyle(file, rank, light)}
 					onpointerdown={(e) => onPtrDown(e, square)}
 					oncontextmenu={(e) => { e.preventDefault(); removePiece(square); }}
 				>
@@ -198,14 +220,22 @@
 
 					{#if piece && !(isDragging && dragFrom === square)}
 						<div class="piece" class:sel={isSel}>
-							{@html PIECE_SVG[piece as PieceCode] ?? ''}
+							{#if pieceSrc(piece)}
+								<img src={pieceSrc(piece)} alt={piece} draggable="false" />
+							{:else}
+								{@html PIECE_SVG[piece as PieceCode] ?? ''}
+							{/if}
 						</div>
 					{/if}
 
 					<!-- Anteprima pezzo palette quando la casella è in hover -->
 					{#if activePalettePiece && !piece}
 						<div class="palette-preview">
-							{@html PIECE_SVG[activePalettePiece as PieceCode] ?? ''}
+							{#if pieceSrc(activePalettePiece)}
+								<img src={pieceSrc(activePalettePiece)} alt={activePalettePiece} draggable="false" />
+							{:else}
+								{@html PIECE_SVG[activePalettePiece as PieceCode] ?? ''}
+							{/if}
 						</div>
 					{/if}
 				</button>
@@ -214,12 +244,16 @@
 	</div>
 
 	<!-- Ghost durante drag board→board -->
-	{#if isDragging && dragSvg}
+	{#if isDragging && dragPiece}
 		<div
 			class="drag-ghost"
 			style="left:{dragX - squareSize/2}px; top:{dragY - squareSize/2}px; width:{squareSize}px; height:{squareSize}px"
 		>
-			{@html dragSvg}
+			{#if pieceSrc(dragPiece)}
+				<img src={pieceSrc(dragPiece)} alt={dragPiece} draggable="false" style="width:100%;height:100%;object-fit:contain" />
+			{:else}
+				{@html PIECE_SVG[dragPiece as PieceCode] ?? ''}
+			{/if}
 		</div>
 	{/if}
 </div>
@@ -260,8 +294,10 @@
 		-webkit-touch-callout: none;
 		transition: filter 0.1s;
 	}
-	.sq.light { background: #F0D9B5; }
-	.sq.dark  { background: #B58863; }
+	/* Base colors set via inline style (board theme store) */
+	.sq.light { /* from theme */ }
+	.sq.dark  { /* from theme */ }
+	.sq { isolation: isolate; }
 
 	.sq.selected       { outline: 3px solid rgba(255,220,0,0.9); outline-offset: -3px; }
 	.sq.dragging-from  { opacity: 0.25; }
@@ -277,7 +313,7 @@
 		filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
 		transition: opacity 0.05s;
 	}
-	.piece :global(svg) { width: 100%; height: 100%; }
+	.piece :global(svg), .piece img { width: 100%; height: 100%; object-fit: contain; display: block; }
 	.piece.sel { filter: drop-shadow(0 0 6px rgba(255,220,0,0.95)); }
 
 	/* Anteprima pezzo palette sulle caselle vuote */
@@ -288,7 +324,7 @@
 		opacity: 0;
 		transition: opacity 0.1s;
 	}
-	.palette-preview :global(svg) { width: 100%; height: 100%; }
+	.palette-preview :global(svg), .palette-preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
 	.sq.palette-hover:hover .palette-preview { opacity: 0.45; }
 
 	/* Coordinate */
@@ -298,9 +334,9 @@
 		font-weight: 700;
 		pointer-events: none;
 		line-height: 1;
-		color: #B58863;
+		color: var(--coord-on-light, #B58863);
 	}
-	.rank-label.on-dark, .file-label.on-dark { color: #F0D9B5; }
+	.rank-label.on-dark, .file-label.on-dark { color: var(--coord-on-dark, #F0D9B5); }
 	.rank-label { top: 2px; left: 3px; }
 	.file-label { bottom: 2px; right: 3px; }
 
