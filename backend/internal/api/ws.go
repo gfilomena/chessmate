@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"chess-clone/backend/internal/db"
-	"chess-clone/backend/internal/game"
+	"chessmate/backend/internal/db"
+	"chessmate/backend/internal/game"
 
 	"github.com/gorilla/websocket"
 )

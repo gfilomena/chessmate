@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"chess-clone/backend/internal/db"
+	"chessmate/backend/internal/db"
 )
 
 type UsersHandler struct {

@@ -10,9 +10,9 @@ import (
 	"os"
 	"strings"
 
-	"chess-clone/backend/internal/api"
-	"chess-clone/backend/internal/db"
-	"chess-clone/backend/internal/matchmaking"
+	"chessmate/backend/internal/api"
+	"chessmate/backend/internal/db"
+	"chessmate/backend/internal/matchmaking"
 )
 
 //go:embed all:static
@@ -21,7 +21,7 @@ var staticFiles embed.FS
 func main() {
 	loadDotEnv(".env")
 
-	pgURL := getEnv("DATABASE_URL", "postgres://chess:chess_secret@localhost:5433/chessdb")
+	pgURL := getEnv("DATABASE_URL", "postgres://chessmate:chessmate_secret@localhost:5432/chessmate")
 	port := getEnv("PORT", "8080")
 
 	pg, err := db.NewPostgres(pgURL)

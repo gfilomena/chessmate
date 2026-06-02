@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"chess-clone/backend/internal/db"
+	"chessmate/backend/internal/db"
 )
 
 const onlineWindow = 45 * time.Second

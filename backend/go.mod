@@ -1,4 +1,4 @@
-module chess-clone/backend
+module chessmate/backend
 
 go 1.22
 

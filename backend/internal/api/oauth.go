@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"chess-clone/backend/internal/db"
+	"chessmate/backend/internal/db"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"

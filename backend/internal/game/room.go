@@ -8,7 +8,7 @@ import (
 	"math"
 	"time"
 
-	"chess-clone/backend/internal/db"
+	"chessmate/backend/internal/db"
 
 	"github.com/notnil/chess"
 )

@@ -3,7 +3,7 @@ package game
 import (
 	"sync"
 
-	"chess-clone/backend/internal/db"
+	"chessmate/backend/internal/db"
 )
 
 // Hub gestisce tutte le room attive

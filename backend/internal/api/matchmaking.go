@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"chess-clone/backend/internal/db"
-	"chess-clone/backend/internal/game"
-	"chess-clone/backend/internal/matchmaking"
+	"chessmate/backend/internal/db"
+	"chessmate/backend/internal/game"
+	"chessmate/backend/internal/matchmaking"
 )
 
 type MatchmakingHandler struct {

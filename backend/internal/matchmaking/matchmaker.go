@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"chess-clone/backend/internal/db"
+	"chessmate/backend/internal/db"
 )
 
 // Matchmaker gira come goroutine e abbina i giocatori ogni 2 secondi.

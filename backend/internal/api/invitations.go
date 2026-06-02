@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"chess-clone/backend/internal/db"
-	"chess-clone/backend/internal/game"
+	"chessmate/backend/internal/db"
+	"chessmate/backend/internal/game"
 )
 
 const (

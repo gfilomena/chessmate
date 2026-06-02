@@ -5,14 +5,14 @@ services:
     environment:
       POSTGRES_USER: chess
       POSTGRES_PASSWORD: chess_secret
-      POSTGRES_DB: chessdb
+      POSTGRES_DB: chessmate
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/migrations:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chess -d chessdb"]
+      test: ["CMD-SHELL", "pg_isready -U chessmate -d chessmate"]
       interval: 5s
       timeout: 5s
       retries: 5
