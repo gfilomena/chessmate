@@ -84,6 +84,7 @@
 	let isDragActive = $state(false);
 	let dragFrom     = $state<string | null>(null);
 	let dragSvg      = $state<string | null>(null);
+	let dragCode     = $state<string | null>(null); // pezzo per <img> (merida/alpha)
 	let dragX        = $state(0);
 	let dragY        = $state(0);
 	let squareSize   = $state(60);
@@ -277,8 +278,10 @@
 		}
 
 		// Prepare ghost only for own/free pieces (drag candidates)
-		if (isOwn && svg) {
-			dragSvg = svg;
+		// svg is null for non-cburnett sets — use dragCode for <img> ghost
+		if (isOwn && (svg || code)) {
+			dragSvg  = svg;
+			dragCode = code;
 			if (boardEl) squareSize = boardEl.getBoundingClientRect().width / 8;
 		}
 
@@ -312,6 +315,7 @@
 				isDragActive   = false;
 				dragFrom       = null;
 				dragSvg        = null;
+			dragCode       = null;
 				selectedSquare = null;
 				legalTargets   = [];
 				ptrDownSquare  = null;
@@ -328,6 +332,7 @@
 				// Pure tap: no drag occurred → treat as click-to-move
 				const tapSq = ptrDownSquare;
 				dragSvg       = null;
+			dragCode      = null;
 				ptrDownSquare = null;
 				if (tapSq) handleTap(tapSq);
 			}
@@ -341,6 +346,7 @@
 			isDragActive   = false;
 			dragFrom       = null;
 			dragSvg        = null;
+			dragCode       = null;
 			selectedSquare = null;
 			legalTargets   = [];
 			liftedSquare   = null;
@@ -519,12 +525,16 @@
 </div>
 
 <!-- Floating drag ghost — viewport-fixed, follows cursor -->
-{#if isDragActive && dragSvg !== null}
+{#if isDragActive && (dragSvg !== null || dragCode !== null)}
 	<div
 		class="drag-ghost"
 		style="left:{dragX}px; top:{dragY}px; width:{squareSize * 1.1}px; height:{squareSize * 1.1}px;"
 	>
-		{@html dragSvg}
+		{#if dragSvg}
+			{@html dragSvg}
+		{:else if dragCode}
+			<img src="/pieces/{$pieceSet}/{dragCode}.svg" alt={dragCode} draggable="false" style="width:100%;height:100%;object-fit:contain" />
+		{/if}
 	</div>
 {/if}
 
