@@ -94,11 +94,14 @@ export class StockfishEngine {
 	}
 
 	/**
-	 * Ottiene la mossa migliore per la posizione FEN al livello ELO specificato.
-	 * Usa UCI_LimitStrength + UCI_Elo per limitare la forza del motore.
-	 * Ritorna la mossa in formato UCI (es. "e2e4", "e7e8q") o "" se non disponibile.
+	 * Mossa del bot con calibrazione per livello.
+	 *
+	 * useElo=true  → UCI_LimitStrength nativo (affidabile solo da ~1320 ELO in su)
+	 * useElo=false → solo movetime basso senza limitazione forza (per bot deboli)
+	 *
+	 * Ritorna la mossa in formato UCI (es. "e2e4") o "" se non disponibile.
 	 */
-	getBestMove(fen: string, elo: number): Promise<string> {
+	getBotMove(fen: string, elo: number, movetime: number, useElo: boolean): Promise<string> {
 		if (!this.initialized) return Promise.resolve('');
 
 		return new Promise((resolve) => {
@@ -110,14 +113,24 @@ export class StockfishEngine {
 				}
 			};
 
-			this.send('setoption name UCI_LimitStrength value true');
-			this.send(`setoption name UCI_Elo value ${Math.max(200, Math.min(2850, elo))}`);
-			this.send(`position fen ${fen}`);
+			if (useElo) {
+				// Bot forti (≥ 1320): usa UCI_LimitStrength nativo di Stockfish
+				this.send('setoption name UCI_LimitStrength value true');
+				this.send(`setoption name UCI_Elo value ${Math.max(1320, Math.min(2850, elo))}`);
+			} else {
+				// Bot deboli (< 1320): disabilita limit e usa solo movetime basso
+				// Stockfish non finirà nemmeno depth 1 → mosse deboli naturali
+				this.send('setoption name UCI_LimitStrength value false');
+			}
 
-			// Movetime proporzionale all'ELO: 300ms (200 ELO) → 1500ms (2000 ELO)
-			const movetime = Math.round(300 + ((elo - 200) / 1800) * 1200);
+			this.send(`position fen ${fen}`);
 			this.send(`go movetime ${movetime}`);
 		});
+	}
+
+	/** @deprecated Usa getBotMove() */
+	getBestMove(fen: string, elo: number): Promise<string> {
+		return this.getBotMove(fen, elo, 800, true);
 	}
 
 	/**

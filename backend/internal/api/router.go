@@ -104,6 +104,9 @@ func NewRouter(pg *db.Postgres, mm *matchmaking.Matchmaker, staticFS fs.FS) http
 	mux.HandleFunc("GET /api/admin/queue",         ra(adminHandler.Queue))
 	mux.HandleFunc("DELETE /api/admin/queue",      ra(adminHandler.ClearQueue))
 
+	// Opening database (bot calibration)
+	mux.HandleFunc("GET /api/opening", HandleOpening)
+
 	// Frontend SPA — catch-all finale
 	mux.Handle("/", newSPAHandler(staticFS))
 

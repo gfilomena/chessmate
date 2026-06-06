@@ -5,6 +5,7 @@
 	import Board from '$lib/chess/Board.svelte';
 	import ChessPageLayout from '$lib/chess/ChessPageLayout.svelte';
 	import { StockfishEngine } from '$lib/chess/stockfish';
+	import { eloBand, getOpeningMoves, sampleMove } from '$lib/chess/opening';
 	import { user, authLoading } from '$lib/stores/auth';
 	import { initSounds, playSound } from '$lib/chess/sounds';
 	import SoundControl from '$lib/chess/SoundControl.svelte';
@@ -19,15 +20,18 @@
 	});
 
 	// ── Bot roster ────────────────────────────────────────────────────────────
+	// randomChance: probabilità (0-1) di giocare una mossa casuale invece di Stockfish
+	// movetime: ms di pensiero (usato per livelli < 1320, senza UCI_LimitStrength)
+	// useElo: se true usa UCI_LimitStrength nativo di Stockfish (solo da ~1320 in su)
 	const BOTS = [
-		{ id: 'matteo',   name: 'Matteo',   elo:  400, stars: 1, piece: '♟', badge: 'Principiante', color: '#4a9e5c', quote: 'Ama il cavallo, non sa perché.'            },
-		{ id: 'sofia',    name: 'Sofia',    elo:  700, stars: 2, piece: '♞', badge: 'Novizio',       color: '#7aaa3e', quote: 'Ha letto mezza pagina di teoria.'           },
-		{ id: 'luca',     name: 'Luca',     elo: 1000, stars: 2, piece: '♝', badge: 'Intermedio',   color: '#c9a227', quote: 'Gioca e4 perché lo fanno tutti.'             },
-		{ id: 'giulia',   name: 'Giulia',   elo: 1300, stars: 3, piece: '♜', badge: 'Club',         color: '#d4811e', quote: 'Conosce la Siciliana a memoria.'             },
-		{ id: 'marco',    name: 'Marco',    elo: 1500, stars: 3, piece: '♛', badge: 'Avanzato',     color: '#c95f2f', quote: 'Analizza le partite la sera.'                },
-		{ id: 'elena',    name: 'Elena',    elo: 1700, stars: 4, piece: '♚', badge: 'Esperto',      color: '#b84040', quote: 'Punisce ogni errore senza pietà.'            },
-		{ id: 'riccardo', name: 'Riccardo', elo: 2000, stars: 4, piece: '♕', badge: 'Maestro',      color: '#8040a0', quote: 'Ha vinto tornei regionali.'                  },
-		{ id: 'magnus',   name: 'Magnus',   elo: 2500, stars: 5, piece: '♔', badge: 'Gran Maestro', color: '#2040a0', quote: 'Pressoché imbattibile. Buona fortuna.'       },
+		{ id: 'matteo',   name: 'Matteo',   elo:  400, stars: 1, piece: '♟', badge: 'Principiante', color: '#4a9e5c', quote: 'Ama il cavallo, non sa perché.',            randomChance: 0.75, movetime:  80, useElo: false },
+		{ id: 'sofia',    name: 'Sofia',    elo:  650, stars: 2, piece: '♞', badge: 'Novizio',       color: '#7aaa3e', quote: 'Ha letto mezza pagina di teoria.',           randomChance: 0.50, movetime: 120, useElo: false },
+		{ id: 'luca',     name: 'Luca',     elo:  900, stars: 2, piece: '♝', badge: 'Intermedio',   color: '#c9a227', quote: 'Gioca e4 perché lo fanno tutti.',             randomChance: 0.20, movetime: 200, useElo: false },
+		{ id: 'giulia',   name: 'Giulia',   elo: 1150, stars: 3, piece: '♜', badge: 'Club',         color: '#d4811e', quote: 'Conosce la Siciliana a memoria.',             randomChance: 0.05, movetime: 300, useElo: false },
+		{ id: 'marco',    name: 'Marco',    elo: 1400, stars: 3, piece: '♛', badge: 'Avanzato',     color: '#c95f2f', quote: 'Analizza le partite la sera.',                randomChance: 0.00, movetime: 800, useElo: true  },
+		{ id: 'elena',    name: 'Elena',    elo: 1650, stars: 4, piece: '♚', badge: 'Esperto',      color: '#b84040', quote: 'Punisce ogni errore senza pietà.',            randomChance: 0.00, movetime:1000, useElo: true  },
+		{ id: 'riccardo', name: 'Riccardo', elo: 1950, stars: 4, piece: '♕', badge: 'Maestro',      color: '#8040a0', quote: 'Ha vinto tornei regionali.',                  randomChance: 0.00, movetime:1200, useElo: true  },
+		{ id: 'magnus',   name: 'Magnus',   elo: 2500, stars: 5, piece: '♔', badge: 'Gran Maestro', color: '#2040a0', quote: 'Pressoché imbattibile. Buona fortuna.',       randomChance: 0.00, movetime:1500, useElo: true  },
 	] as const;
 
 	// ── Setup state ───────────────────────────────────────────────────────────
@@ -248,7 +252,44 @@
 		isThinking = true;
 
 		try {
-			const uciMove = await engine.getBestMove(chessGame.fen(), selectedBot.elo);
+			const curFen = chessGame.fen();
+			const ply = chessGame.history().length;
+			let uciMove = '';
+
+			// ── Livello 1: Opening DB (prime 20 mosse) ──────────────────────────
+			// Dati reali di giocatori umani a quella fascia ELO.
+			// Se il DB non è disponibile → passa subito al livello 2.
+			if (ply < 40) {
+				const band  = eloBand(selectedBot.elo);
+				const moves = await getOpeningMoves(curFen, band);
+				if (moves.length > 0) {
+					uciMove = sampleMove(moves) ?? '';
+				}
+			}
+
+			// ── Livello 2: Mossa casuale (bot deboli) ────────────────────────────
+			// Per i primi 4 bot (< 1300 ELO) c'è una probabilità di giocare random.
+			// Simula errori e dimenticanze tipici dei principianti.
+			if (!uciMove && selectedBot.randomChance > 0 && Math.random() < selectedBot.randomChance) {
+				const legal = chessGame.moves({ verbose: true });
+				if (legal.length) {
+					const pick = legal[Math.floor(Math.random() * legal.length)];
+					uciMove = pick.from + pick.to + (pick.promotion ?? '');
+				}
+			}
+
+			// ── Livello 3: Stockfish (fallback) ─────────────────────────────────
+			// movetime basso per bot deboli (no UCI_LimitStrength sotto 1320),
+			// UCI_LimitStrength nativo per bot forti.
+			if (!uciMove) {
+				uciMove = await engine.getBotMove(
+					curFen,
+					selectedBot.elo,
+					selectedBot.movetime,
+					selectedBot.useElo
+				);
+			}
+
 			if (!uciMove) { isThinking = false; return; }
 
 			const from  = uciMove.slice(0, 2);
