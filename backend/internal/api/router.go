@@ -107,6 +107,9 @@ func NewRouter(pg *db.Postgres, mm *matchmaking.Matchmaker, staticFS fs.FS) http
 	// Opening database (bot calibration)
 	mux.HandleFunc("GET /api/opening", HandleOpening)
 
+	// Player profiles (realistic bot gameplay from Lichess)
+	mux.HandleFunc("GET /api/player-profile", HandlePlayerProfile)
+
 	// Frontend SPA — catch-all finale
 	mux.Handle("/", newSPAHandler(staticFS))
 
