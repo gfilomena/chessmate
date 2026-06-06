@@ -4,13 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
-	"math"
 	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 
 	_ "modernc.org/sqlite"
@@ -314,11 +312,4 @@ func GenerateMoveFromProfile(
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-
-func normFEN(fen string) string {
-	parts := strings.Fields(fen)
-	if len(parts) >= 4 {
-		return strings.Join(parts[:4], " ")
-	}
-	return fen
-}
+// normFEN is defined in opening.go and reused here
