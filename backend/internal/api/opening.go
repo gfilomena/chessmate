@@ -80,25 +80,33 @@ type OpeningResponse struct {
 // Response: { moves: [{uci, weight, count}] }
 // Se non ci sono dati → { moves: [] } (frontend usa fallback Stockfish)
 func HandleOpening(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "public, max-age=3600")
 
-	db := getOpeningDB()
-	if db == nil {
-		json.NewEncoder(w).Encode(OpeningResponse{Moves: []OpeningMove{}})
-		return
-	}
-
-	fen     := r.URL.Query().Get("fen")
+	// Validate parameters first (before checking DB availability)
+	fen := r.URL.Query().Get("fen")
 	bandStr := r.URL.Query().Get("band")
 
 	if fen == "" {
-		http.Error(w, "fen richiesto", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "fen richiesto"})
 		return
 	}
 	band, err := strconv.Atoi(bandStr)
 	if err != nil || band < 1 || band > 6 {
-		http.Error(w, "band non valido (1-6)", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "band non valido (1-6)"})
+		return
+	}
+
+	// Set content type for successful responses
+	w.Header().Set("Content-Type", "application/json")
+
+	// If DB unavailable, gracefully return empty moves (fallback to Stockfish)
+	db := getOpeningDB()
+	if db == nil {
+		json.NewEncoder(w).Encode(OpeningResponse{Moves: []OpeningMove{}})
 		return
 	}
 
