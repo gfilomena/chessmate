@@ -77,7 +77,7 @@ def analyze_game(pgn_str: str, elo_band: int, game_id: str) -> list:
     moves_data = []
 
     try:
-        game = chess.pgn.loads(pgn_str)
+        game = chess.pgn.read_game(StringIO(pgn_str))
         board = chess.Board()
 
         sf = Stockfish(depth=STOCKFISH_DEPTH)
