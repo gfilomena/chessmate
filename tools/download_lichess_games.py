@@ -21,10 +21,10 @@ from typing import Iterator, Dict, Tuple
 import logging
 
 try:
-    import berserk
+    import requests
     import chess.pgn
 except ImportError:
-    print("Installa dipendenze: pip install berserk python-chess")
+    print("Installa dipendenze: pip install requests python-chess")
     sys.exit(1)
 
 # ── Configuration ──────────────────────────────────────────────────────────────
@@ -73,72 +73,71 @@ def fetch_games_for_band(
     count: int = GAMES_PER_BAND
 ) -> Iterator[str]:
     """
-    Scarica partite da giocatori in una fascia ELO.
+    Scarica partite da Lichess usando l'API pubblica.
     Ritorna PGN strings uno alla volta.
 
     Usa l'endpoint Lichess /api/games/search per cercare partite con:
-    - Entrambi i giocatori nella fascia ELO
     - Rapid time control
-    - Non aborti (finished games)
+    - Valutazioni in una fascia ELO specifica
     """
-    client = berserk.Client()
-
-    params = {
-        'perf': PERF_TYPE,
-        'status': 'draw,mate,outoftime',  # Solo partite completate
-        'sort': 'rating',
-        'order': 'desc',
-        'max': min(500, count),  # Lichess max 500 per query
-        'analysed': True,  # Solo con analisi Stockfish
-    }
+    url = "https://lichess.org/api/games/search"
 
     downloaded = 0
-    pages_checked = 0
+    page = 1
+    max_pages = 20  # Limite per evitare infinite loop
 
     try:
-        # Scarica in batch
-        for game in client.games.export(
-            player=None,  # Cerca globalmente
-            perf_type=PERF_TYPE,
-            max=count,
-            vs=None,
-            opening=None,
-            rated=True,
-        ):
-            # Filtra per ELO
-            white_elo = game.get('players', {}).get('white', {}).get('rating')
-            black_elo = game.get('players', {}).get('black', {}).get('rating')
+        while downloaded < count and page <= max_pages:
+            params = {
+                'perf': PERF_TYPE,
+                'status': 'mate,draw,outoftime',  # Solo partite finite
+                'minRating': min_elo,
+                'maxRating': max_elo,
+                'moves': 'true',  # Includi mosse
+                'opening': 'true',  # Includi aperture
+                'sort': 'rating',
+                'order': 'desc',
+                'max': 300,  # Lichess API max per pagina
+                'page': page,
+            }
 
-            if not white_elo or not black_elo:
-                continue
+            headers = {
+                'User-Agent': 'ChessBot/1.0 (Educational)'
+            }
 
-            # Accetta se almeno uno nella fascia
-            elo_in_range = (
-                (min_elo <= white_elo <= max_elo) or
-                (min_elo <= black_elo <= max_elo)
-            )
+            try:
+                response = requests.get(url, params=params, headers=headers, timeout=10)
+                response.raise_for_status()
+                data = response.json()
 
-            if not elo_in_range:
-                continue
-
-            # Ottieni PGN
-            pgn_str = game.get('pgn')
-            if pgn_str:
-                downloaded += 1
-                yield pgn_str
-
-                if downloaded % 100 == 0:
-                    logger.info(
-                        f"Band {band}: {downloaded}/{count} partite scaricate "
-                        f"(ELO: {white_elo} vs {black_elo})"
-                    )
-
-                if downloaded >= count:
+                games = data.get('games', [])
+                if not games:
+                    logger.warning(f"Band {band}: nessuna partita nella pagina {page}")
                     break
 
-            pages_checked += 1
-            if pages_checked > count * 3:  # Timeout per evitare loop infinito
-                logger.warning(f"Band {band}: timeout dopo {pages_checked} pagine")
+                for game in games:
+                    if downloaded >= count:
+                        break
+
+                    # Estrai PGN da game.pgn
+                    pgn_str = game.get('pgn')
+                    if pgn_str:
+                        downloaded += 1
+                        yield pgn_str
+
+                        if downloaded % 100 == 0:
+                            white_elo = game.get('players', {}).get('white', {}).get('rating')
+                            black_elo = game.get('players', {}).get('black', {}).get('rating')
+                            logger.info(
+                                f"Band {band}: {downloaded}/{count} partite scaricate "
+                                f"(ELO: {white_elo} vs {black_elo})"
+                            )
+
+                page += 1
+                time.sleep(0.5)  # Rate limiting
+
+            except requests.RequestException as e:
+                logger.error(f"Band {band}: errore HTTP pagina {page}: {e}")
                 break
 
     except Exception as e:

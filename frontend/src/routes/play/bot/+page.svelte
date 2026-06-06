@@ -24,6 +24,9 @@
 	// movetime: ms di pensiero (usato per livelli < 1320, senza UCI_LimitStrength)
 	// useElo: se true usa UCI_LimitStrength nativo di Stockfish (solo da ~1320 in su)
 	const BOTS = [
+		{ id: 'principino', name: 'Principino', elo:  100, stars: 1, piece: '♙', badge: 'Apprendista', color: '#2d6f3e', quote: 'Non sa come muovere i pezzi.',                 randomChance: 0.95, movetime:  40, useElo: false },
+		{ id: 'piccolo',  name: 'Piccolo',  elo:  200, stars: 1, piece: '♟', badge: 'Bambino',      color: '#3f8c4f', quote: 'Gioca a caso, a volte scopre il buono.',         randomChance: 0.90, movetime:  60, useElo: false },
+		{ id: 'esordiente', name: 'Esordiente', elo:  300, stars: 1, piece: '♟', badge: 'Esordiente',  color: '#4a9e5c', quote: 'Prova a fare scacchi. Risultati variabili.',    randomChance: 0.85, movetime:  70, useElo: false },
 		{ id: 'matteo',   name: 'Matteo',   elo:  400, stars: 1, piece: '♟', badge: 'Principiante', color: '#4a9e5c', quote: 'Ama il cavallo, non sa perché.',            randomChance: 0.75, movetime:  80, useElo: false },
 		{ id: 'sofia',    name: 'Sofia',    elo:  650, stars: 2, piece: '♞', badge: 'Novizio',       color: '#7aaa3e', quote: 'Ha letto mezza pagina di teoria.',           randomChance: 0.50, movetime: 120, useElo: false },
 		{ id: 'luca',     name: 'Luca',     elo:  900, stars: 2, piece: '♝', badge: 'Intermedio',   color: '#c9a227', quote: 'Gioca e4 perché lo fanno tutti.',             randomChance: 0.20, movetime: 200, useElo: false },
