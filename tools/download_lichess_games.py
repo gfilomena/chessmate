@@ -18,6 +18,7 @@ import sys
 import os
 import time
 import json
+import io
 from typing import Iterator, Dict, Tuple, List
 import logging
 import hashlib
@@ -195,7 +196,7 @@ def download_all_bands(db_path: str):
         for pgn_str in fetch_games_for_band(band, min_elo, max_elo, remaining * 3):
             try:
                 # Estrai info dalla partita
-                game = chess.pgn.loads(pgn_str)
+                game = chess.pgn.read_game(io.StringIO(pgn_str))
 
                 game_id = game.headers.get('Site', '').split('/')[-1]
                 white_elo = int(game.headers.get('WhiteElo', 0))
