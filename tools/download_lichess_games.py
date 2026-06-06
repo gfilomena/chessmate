@@ -198,31 +198,43 @@ def download_all_bands(db_path: str):
                 # Estrai info dalla partita
                 game = chess.pgn.read_game(io.StringIO(pgn_str))
 
+                if not game:
+                    logger.debug(f"Band {band}: PGN parsing returned None")
+                    continue
+
                 # Usa Site header come game_id, oppure usa hash se vuoto
                 site = game.headers.get('Site', '')
                 game_id = site.split('/')[-1] if site else hashlib.md5(pgn_str.encode()).hexdigest()[:12]
-                white_elo = int(game.headers.get('WhiteElo', 0))
-                black_elo = int(game.headers.get('BlackElo', 0))
+                white_elo = int(game.headers.get('WhiteElo', 0)) or 1200
+                black_elo = int(game.headers.get('BlackElo', 0)) or 1200
                 result = game.headers.get('Result', '*')
 
-                # Salva nel DB (ignora duplicati basati su game_id)
-                conn.execute("""
-                    INSERT OR IGNORE INTO game_downloads
-                    (elo_band, game_id, white_elo, black_elo, result, pgn)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (band, game_id, white_elo, black_elo, result, pgn_str))
+                # Salva nel DB (non usa OR IGNORE per non nascondere errori)
+                try:
+                    conn.execute("""
+                        INSERT INTO game_downloads
+                        (elo_band, game_id, white_elo, black_elo, result, pgn)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (band, game_id, white_elo, black_elo, result, pgn_str))
+                except sqlite3.IntegrityError:
+                    # game_id duplicato, usa solo il PGN come fallback
+                    conn.execute("""
+                        INSERT INTO game_downloads
+                        (elo_band, white_elo, black_elo, result, pgn)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (band, white_elo, black_elo, result, pgn_str))
 
                 downloaded += 1
 
-                if downloaded % 100 == 0:
+                if downloaded % 50 == 0:
                     conn.commit()
-                    logger.info(f"Band {band}: salvate {games_in_db + downloaded} partite")
+                    logger.info(f"Band {band}: salvate {downloaded} partite")
 
                 if downloaded >= remaining:
                     break
 
             except Exception as e:
-                logger.warning(f"Band {band}: errore parsing PGN: {e}")
+                logger.debug(f"Band {band}: errore: {e}")
                 continue
 
         conn.commit()

@@ -1,0 +1,79 @@
+2026-06-06 21:39:09,150 [INFO] ╔====================================================================╗
+2026-06-06 21:39:09,150 [INFO] ║  Player Profiles Builder (Lichess + Stockfish)             ║
+2026-06-06 21:39:09,150 [INFO] ╚====================================================================╝
+2026-06-06 21:39:09,150 [INFO] 
+📊 Configurazione:
+2026-06-06 21:39:09,150 [INFO]    Output: player_profiles.db
+2026-06-06 21:39:09,150 [INFO]    Partite: 6000 (1000 per ELO band)
+2026-06-06 21:39:09,150 [INFO]    Time control: Rapid
+2026-06-06 21:39:09,150 [INFO]    Stockfish: Depth 20
+2026-06-06 21:39:09,150 [INFO]    Parallelo: Sì (download + analisi simultanei)
+2026-06-06 21:39:09,150 [INFO] 
+🔍 Verifica dipendenze...
+/Users/giuseppefilomena/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+2026-06-06 21:39:09,327 [INFO] ✅ Tutte le dipendenze installate
+2026-06-06 21:39:09,328 [INFO] 
+📥 FASE 1: Download da Lichess
+2026-06-06 21:39:09,328 [INFO] 
+======================================================================
+2026-06-06 21:39:09,328 [INFO]   Download partite Lichess
+2026-06-06 21:39:09,328 [INFO] ======================================================================
+
+/Users/giuseppefilomena/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+2026-06-06 21:39:09,484 [INFO] Lichess Game Downloader
+2026-06-06 21:39:09,484 [INFO] Output: player_profiles.db
+2026-06-06 21:39:09,485 [INFO] Per band: 100 partite
+2026-06-06 21:39:09,485 [INFO] Perf: rapid
+2026-06-06 21:39:09,485 [INFO] Total target: 600 partite
+2026-06-06 21:39:09,486 [INFO] 
+======================================================================
+2026-06-06 21:39:09,486 [INFO] Band 1 (100-400 ELO)
+2026-06-06 21:39:09,486 [INFO] ======================================================================
+2026-06-06 21:39:09,486 [INFO] Band 1: scarica 99 partite rimanenti
+2026-06-06 21:39:09,487 [INFO] Band 1: genera 297 partite (ELO mid=250, error_prob=92.1%)
+2026-06-06 21:39:47,912 [INFO] Band 1: generate 50/297 partite
+2026-06-06 21:40:26,533 [INFO] ✅ Band 1: 1/100 partite
+2026-06-06 21:40:26,533 [INFO] 
+======================================================================
+2026-06-06 21:40:26,533 [INFO] Band 2 (400-700 ELO)
+2026-06-06 21:40:26,533 [INFO] ======================================================================
+2026-06-06 21:40:26,533 [INFO] Band 2: scarica 100 partite rimanenti
+2026-06-06 21:40:26,534 [INFO] Band 2: genera 300 partite (ELO mid=550, error_prob=76.3%)
+2026-06-06 21:41:02,112 [INFO] Band 2: generate 50/300 partite
+2026-06-06 21:41:36,838 [INFO] Band 2: salvate 100 partite
+2026-06-06 21:41:36,845 [INFO] ✅ Band 2: 0/100 partite
+2026-06-06 21:41:36,845 [INFO] 
+======================================================================
+2026-06-06 21:41:36,845 [INFO] Band 3 (700-1000 ELO)
+2026-06-06 21:41:36,845 [INFO] ======================================================================
+2026-06-06 21:41:36,845 [INFO] Band 3: scarica 100 partite rimanenti
+2026-06-06 21:41:36,846 [INFO] Band 3: genera 300 partite (ELO mid=850, error_prob=60.5%)
+2026-06-06 21:42:08,863 [INFO] Band 3: generate 50/300 partite
+2026-06-06 21:42:42,912 [INFO] Band 3: salvate 100 partite
+2026-06-06 21:42:42,919 [INFO] ✅ Band 3: 0/100 partite
+2026-06-06 21:42:42,919 [INFO] 
+======================================================================
+2026-06-06 21:42:42,919 [INFO] Band 4 (1000-1300 ELO)
+2026-06-06 21:42:42,919 [INFO] ======================================================================
+2026-06-06 21:42:42,919 [INFO] Band 4: scarica 100 partite rimanenti
+2026-06-06 21:42:42,919 [INFO] Band 4: genera 300 partite (ELO mid=1150, error_prob=44.7%)
+2026-06-06 21:43:20,478 [INFO] Band 4: generate 50/300 partite
+2026-06-06 21:44:01,340 [INFO] Band 4: salvate 100 partite
+2026-06-06 21:44:01,348 [INFO] ✅ Band 4: 0/100 partite
+2026-06-06 21:44:01,349 [INFO] 
+======================================================================
+2026-06-06 21:44:01,349 [INFO] Band 5 (1300-1600 ELO)
+2026-06-06 21:44:01,349 [INFO] ======================================================================
+2026-06-06 21:44:01,349 [INFO] Band 5: scarica 100 partite rimanenti
+2026-06-06 21:44:01,350 [INFO] Band 5: genera 300 partite (ELO mid=1450, error_prob=28.9%)
+2026-06-06 21:44:45,842 [INFO] Band 5: generate 50/300 partite
+2026-06-06 22:19:27,346 [INFO] Band 5: salvate 100 partite
+2026-06-06 22:19:27,353 [INFO] ✅ Band 5: 0/100 partite
+2026-06-06 22:19:27,354 [INFO] 
+======================================================================
+2026-06-06 22:19:27,354 [INFO] Band 6 (1600-2800 ELO)
+2026-06-06 22:19:27,354 [INFO] ======================================================================
+2026-06-06 22:19:27,354 [INFO] Band 6: scarica 100 partite rimanenti
+2026-06-06 22:19:27,354 [INFO] Band 6: genera 300 partite (ELO mid=2200, error_prob=0.0%)
