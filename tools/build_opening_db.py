@@ -1,3 +1,4 @@
+from __future__ import annotations
 #!/usr/bin/env python3
 """
 build_opening_db.py — Costruisce il database delle aperture da file Lichess PGN.

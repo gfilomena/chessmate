@@ -9,6 +9,7 @@ Thumbs.db
 
 # ── Backend (Go) ──────────────────────────────────────────────────
 backend/chess-clone
+backend/chess-server
 backend/*.exe
 backend/tmp/
 /bin/
