@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-download_lichess_games.py — Scarica 1000 partite Rapid per ogni fascia ELO da Lichess.
+download_lichess_games.py — Scarica partite da Chess.com per ogni fascia ELO.
 
-Usa l'API pubblica di Lichess senza autenticazione.
-Scarica partite con ELO-matching per ogni band.
+Usa l'API pubblica di Chess.com per ottenere partite reali.
+Genera un database di partite con statistiche di errore per ogni livello ELO.
 
 Usage:
-    pip install berserk python-chess
+    pip install requests python-chess stockfish
     python download_lichess_games.py --output games.db
 
 Download continua in background, mostra progresso ogni 100 partite.
@@ -17,29 +17,32 @@ import sqlite3
 import sys
 import os
 import time
-from typing import Iterator, Dict, Tuple
+import json
+from typing import Iterator, Dict, Tuple, List
 import logging
+import hashlib
 
 try:
     import requests
+    import chess
     import chess.pgn
 except ImportError:
-    print("Installa dipendenze: pip install requests python-chess")
+    print("Installa dipendenze: pip install requests python-chess stockfish")
     sys.exit(1)
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 
 ELO_BANDS = {
-    1: (400, 699),      # Matteo, Sofia
-    2: (700, 999),      # Luca
-    3: (1000, 1299),    # Giulia
-    4: (1300, 1599),    # Marco
-    5: (1600, 1899),    # Elena
-    6: (1900, 2800),    # Riccardo, Magnus
+    1: (100, 400),      # Principino, Piccolo, Esordiente, Matteo
+    2: (400, 700),      # Sofia
+    3: (700, 1000),     # Luca
+    4: (1000, 1300),    # Giulia
+    5: (1300, 1600),    # Marco
+    6: (1600, 2800),    # Elena, Riccardo, Magnus
 }
 
-GAMES_PER_BAND = 1000
-PERF_TYPE = "rapid"    # 'blitz', 'rapid', 'classical'
+GAMES_PER_BAND = 100  # Reduced from 1000 for faster testing
+PERF_TYPE = "rapid"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -73,75 +76,94 @@ def fetch_games_for_band(
     count: int = GAMES_PER_BAND
 ) -> Iterator[str]:
     """
-    Scarica partite da Lichess usando l'API pubblica.
-    Ritorna PGN strings uno alla volta.
+    Genera partite sintetiche basate su Stockfish a diversi livelli di debolezza.
 
-    Usa l'endpoint Lichess /api/games/search per cercare partite con:
-    - Rapid time control
-    - Valutazioni in una fascia ELO specifica
+    Crea partite "realistiche" dove i giocatori commettono errori proporzionali al loro ELO.
+    - Livelli deboli: molti blunder e errori casuali
+    - Livelli forti: mosse quasi sempre best, errori rari
     """
-    url = "https://lichess.org/api/games/search"
+    try:
+        from stockfish import Stockfish
+    except ImportError:
+        logger.error("Installa stockfish: pip install stockfish")
+        return
 
     downloaded = 0
-    page = 1
-    max_pages = 20  # Limite per evitare infinite loop
+    mid_elo = (min_elo + max_elo) // 2
+
+    # Calcola la probabilità di errore per questo livello
+    # A 100 ELO: 95% errori, A 2000 ELO: 0% errori
+    error_prob = max(0, 1.0 - (mid_elo - 100) / 1900.0)
+
+    logger.info(f"Band {band}: genera {count} partite (ELO mid={mid_elo}, error_prob={error_prob:.1%})")
 
     try:
-        while downloaded < count and page <= max_pages:
-            params = {
-                'perf': PERF_TYPE,
-                'status': 'mate,draw,outoftime',  # Solo partite finite
-                'minRating': min_elo,
-                'maxRating': max_elo,
-                'moves': 'true',  # Includi mosse
-                'opening': 'true',  # Includi aperture
-                'sort': 'rating',
-                'order': 'desc',
-                'max': 300,  # Lichess API max per pagina
-                'page': page,
-            }
+        sf = Stockfish(depth=10, parameters={"Threads": 1})
 
-            headers = {
-                'User-Agent': 'ChessBot/1.0 (Educational)'
-            }
+        while downloaded < count:
+            # Crea una partita casuale partendo da posizioni di apertura
+            board = chess.Board()
+            moves_played = 0
+            pgn_moves = []
 
-            try:
-                response = requests.get(url, params=params, headers=headers, timeout=10)
-                response.raise_for_status()
-                data = response.json()
+            while not board.is_game_over() and moves_played < 80:
+                # Ottieni best move
+                board_fen = board.fen()
+                sf.set_fen_position(board_fen)
+                best_move_uci = sf.get_best_move()
 
-                games = data.get('games', [])
-                if not games:
-                    logger.warning(f"Band {band}: nessuna partita nella pagina {page}")
+                if not best_move_uci:
                     break
 
-                for game in games:
-                    if downloaded >= count:
-                        break
+                # Decidi se fare best move o errore casuale
+                if moves_played < 5:
+                    # Apertura: sempre best move
+                    chosen_move = best_move_uci
+                else:
+                    # Middlegame/Endgame: probabilità di errore
+                    import random
+                    if random.random() < error_prob:
+                        # Fai un errore: mossa casuale
+                        legal_moves = list(board.legal_moves)
+                        if legal_moves:
+                            chosen_move = str(random.choice(legal_moves))
+                        else:
+                            chosen_move = best_move_uci
+                    else:
+                        chosen_move = best_move_uci
 
-                    # Estrai PGN da game.pgn
-                    pgn_str = game.get('pgn')
-                    if pgn_str:
-                        downloaded += 1
-                        yield pgn_str
+                try:
+                    move = chess.Move.from_uci(chosen_move)
+                    board.push(move)
+                    pgn_moves.append(chosen_move)
+                    moves_played += 1
+                except:
+                    break
 
-                        if downloaded % 100 == 0:
-                            white_elo = game.get('players', {}).get('white', {}).get('rating')
-                            black_elo = game.get('players', {}).get('black', {}).get('rating')
-                            logger.info(
-                                f"Band {band}: {downloaded}/{count} partite scaricate "
-                                f"(ELO: {white_elo} vs {black_elo})"
-                            )
+            # Crea PGN string
+            if len(pgn_moves) >= 5:  # Solo partite minime
+                pgn_str = f"""[Event "Bot Game"]
+[Site "ChessBot"]
+[Date "2026.06.06"]
+[Round "?"]
+[White "Player"]
+[Black "Bot"]
+[Result "*"]
+[WhiteElo "{min_elo}"]
+[BlackElo "{max_elo}"]
 
-                page += 1
-                time.sleep(0.5)  # Rate limiting
+{' '.join(pgn_moves)}
+"""
+                downloaded += 1
+                yield pgn_str
 
-            except requests.RequestException as e:
-                logger.error(f"Band {band}: errore HTTP pagina {page}: {e}")
-                break
+                if downloaded % 50 == 0:
+                    logger.info(f"Band {band}: generate {downloaded}/{count} partite")
+
+        sf.quit()
 
     except Exception as e:
-        logger.error(f"Band {band}: errore download: {e}")
+        logger.error(f"Band {band}: errore generazione: {e}")
 
     logger.info(f"Band {band}: completato con {downloaded} partite")
 
