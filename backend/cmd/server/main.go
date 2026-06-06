@@ -79,3 +79,4 @@ func loadDotEnv(filename string) {
 	}
 	log.Println(".env caricato")
 }
+// Build trigger: 1780767294
