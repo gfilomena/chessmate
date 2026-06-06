@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS sync_status (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT OR IGNORE INTO sync_status VALUES
+INSERT OR IGNORE INTO sync_status (key, value) VALUES
     ('version', '1.0'),
     ('last_updated', ''),
     ('total_games_analyzed', '0'),

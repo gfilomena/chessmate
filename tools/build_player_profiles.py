@@ -150,7 +150,7 @@ def main():
     # Download
     if not args.skip_download:
         logger.info(f"\n📥 FASE 1: Download da Lichess")
-        cmd = f"cd {tools_dir} && python download_lichess_games.py --output {output}"
+        cmd = f"cd {tools_dir} && python3 download_lichess_games.py --output {output}"
         if not run_command(cmd, "Download partite Lichess"):
             logger.error("❌ Download fallito")
             sys.exit(1)
@@ -160,7 +160,7 @@ def main():
     # Analisi
     if not args.skip_analysis:
         logger.info(f"\n🔬 FASE 2: Analisi con Stockfish")
-        cmd = f"cd {tools_dir} && python analyze_lichess_games.py --db {output}"
+        cmd = f"cd {tools_dir} && python3 analyze_lichess_games.py --db {output}"
         if not run_command(cmd, "Analisi partite con Stockfish"):
             logger.error("❌ Analisi fallita")
             sys.exit(1)
