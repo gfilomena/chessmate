@@ -1,4 +1,5 @@
 # ── Stage 1: Build frontend SvelteKit ─────────────────────────────────────
+# Force rebuild timestamp: 2026-06-07 13:09
 FROM node:20-alpine AS frontend-builder
 
 # Render injects RENDER_GIT_COMMIT automatically during builds
