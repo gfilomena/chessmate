@@ -928,4 +928,3 @@
 	.moves-panel { flex: none; max-height: 200px; }
 }
 </style>
-// Deploy trigger: 1780829395
