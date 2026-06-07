@@ -19,7 +19,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ── Stage 2: Build backend Go ──────────────────────────────────────────────
-FROM golang:latest-alpine AS backend-builder
+FROM golang:1.22-alpine AS backend-builder
 
 WORKDIR /app/backend
 
