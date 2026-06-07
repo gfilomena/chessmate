@@ -415,7 +415,7 @@
 			</div>
 
 			<!-- Bot selection -->
-			<section class="setup-section">
+			<section class="setup-section bots-section">
 				<h2>{$t.bot.opponent_label}</h2>
 				<div class="bots-grid">
 					{#each BOTS as bot}
@@ -601,15 +601,18 @@
 /* ══════════════════════════════════════════════════════
    SETUP
 ══════════════════════════════════════════════════════ */
+/* ── Setup page: occupa tutta l'altezza disponibile ── */
 .setup-page {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
-	height: 100%;
+	justify-content: flex-start;
+	min-height: 100%;
+	height: 100dvh;
 	overflow: hidden;
-	padding: clamp(0.5rem, 1.5dvh, 1.5rem) 1rem;
-	gap: clamp(0.3rem, 0.8dvh, 1rem);
+	padding: clamp(0.4rem, 1dvh, 1rem) 1rem;
+	gap: clamp(0.25rem, 0.6dvh, 0.75rem);
+	box-sizing: border-box;
 }
 
 .back-link {
@@ -618,49 +621,68 @@
 	font-size: 0.9rem;
 	text-decoration: none;
 	transition: color 0.15s;
+	flex-shrink: 0;
 }
 .back-link:hover { color: var(--text); }
 
+/* Card occupa tutto lo spazio verticale rimanente */
 .setup-card {
 	background: var(--bg-card);
 	border: 1px solid var(--border);
 	border-radius: 16px;
-	padding: clamp(1rem, 2dvh, 2.5rem) clamp(1rem, 2vw, 2rem);
+	padding: clamp(0.75rem, 1.5dvh, 2rem) clamp(1rem, 2vw, 2rem);
 	width: 100%;
-	max-width: 540px;
+	max-width: 600px;
 	display: flex;
 	flex-direction: column;
-	gap: clamp(0.6rem, 1.5dvh, 2rem);
-	max-height: calc(100dvh - 2.5rem);
+	gap: clamp(0.5rem, 1dvh, 1.5rem);
+	flex: 1;               /* cresce per riempire l'altezza */
+	min-height: 0;         /* permette shrink */
 	overflow-y: auto;
 	scrollbar-width: none;
 }
 .setup-card::-webkit-scrollbar { display: none; }
 
+/* Sezione bot prende tutto lo spazio extra disponibile */
+.setup-section.bots-section {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+.setup-section.bots-section .bots-grid {
+	flex: 1;
+	min-height: 0;
+}
+
 .setup-header {
 	text-align: center;
+	flex-shrink: 0;
 }
 .setup-icon {
-	font-size: clamp(1.6rem, 3.5dvh, 3rem);
+	font-size: clamp(1.4rem, 2.5dvh, 2.5rem);
 	display: block;
-	margin-bottom: 0.25rem;
+	margin-bottom: 0.2rem;
 }
 .setup-header h1 {
-	font-size: clamp(1.2rem, 2.5dvh, 1.8rem);
-	margin-bottom: 0.2rem;
+	font-size: clamp(1.1rem, 2dvh, 1.6rem);
+	margin-bottom: 0.15rem;
 }
 .setup-sub {
 	color: var(--text-muted);
-	font-size: clamp(0.72rem, 1.3dvh, 0.95rem);
+	font-size: clamp(0.7rem, 1.2dvh, 0.9rem);
 }
 
+.setup-section {
+	flex-shrink: 0;
+}
 .setup-section h2 {
-	font-size: 0.78rem;
+	font-size: 0.75rem;
 	text-transform: uppercase;
 	letter-spacing: 0.07em;
 	color: var(--text-muted);
 	font-weight: 600;
-	margin-bottom: clamp(0.35rem, 0.8dvh, 0.75rem);
+	margin-bottom: clamp(0.3rem, 0.6dvh, 0.6rem);
 }
 
 /* Color buttons */
@@ -673,8 +695,8 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 0.3rem;
-	padding: clamp(0.45rem, 1dvh, 0.85rem) 0.5rem;
+	gap: 0.25rem;
+	padding: clamp(0.35rem, 0.8dvh, 0.75rem) 0.5rem;
 	background: var(--bg);
 	border: 2px solid var(--border);
 	border-radius: 10px;
@@ -690,30 +712,34 @@
 	background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 .color-piece {
-	font-size: clamp(1.3rem, 2.5dvh, 1.8rem);
+	font-size: clamp(1.2rem, 2dvh, 1.7rem);
 	line-height: 1;
 	filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
 }
 .color-piece.dark { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.7)); }
 
-/* Bot grid */
+/* Bot grid — riempie lo spazio disponibile in altezza */
 .bots-grid {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
-	gap: clamp(0.3rem, 0.7dvh, 0.6rem);
+	grid-auto-rows: 1fr;   /* righe uguali, si espandono */
+	gap: clamp(0.25rem, 0.6dvh, 0.5rem);
+	height: 100%;
 }
 .bot-card {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: clamp(0.08rem, 0.2dvh, 0.2rem);
-	padding: clamp(0.35rem, 0.9dvh, 0.75rem) 0.4rem clamp(0.25rem, 0.7dvh, 0.6rem);
+	justify-content: center;
+	gap: clamp(0.06rem, 0.18dvh, 0.2rem);
+	padding: clamp(0.25rem, 0.7dvh, 0.6rem) 0.3rem;
 	background: var(--bg);
 	border: 2px solid var(--border);
 	border-radius: 10px;
 	cursor: pointer;
 	text-align: center;
 	transition: border-color 0.15s, background 0.15s, transform 0.1s;
+	min-height: 0;
 }
 .bot-card:hover {
 	border-color: var(--bot-color, var(--accent));
@@ -724,42 +750,42 @@
 	background: color-mix(in srgb, var(--bot-color, var(--accent)) 10%, transparent);
 }
 .bot-piece {
-	font-size: clamp(1.1rem, 2dvh, 1.7rem);
+	font-size: clamp(1rem, 1.8dvh, 1.6rem);
 	line-height: 1;
 	color: var(--bot-color, var(--accent));
 	filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
 }
 .bot-name {
-	font-size: clamp(0.62rem, 1dvh, 0.82rem);
+	font-size: clamp(0.6rem, 1dvh, 0.82rem);
 	font-weight: 700;
 	color: var(--text);
 }
 .bot-stars {
-	font-size: clamp(0.45rem, 0.75dvh, 0.6rem);
+	font-size: clamp(0.42rem, 0.7dvh, 0.58rem);
 	color: var(--bot-color, var(--accent));
 	letter-spacing: 1px;
 }
 .bot-badge {
-	font-size: clamp(0.4rem, 0.65dvh, 0.55rem);
+	font-size: clamp(0.38rem, 0.6dvh, 0.52rem);
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-	padding: 0.1rem 0.4rem;
+	padding: 0.1rem 0.35rem;
 	border-radius: 20px;
 	background: var(--bot-color, var(--accent));
 	color: #fff;
 	white-space: nowrap;
 }
 .bot-quote {
-	font-size: clamp(0.45rem, 0.7dvh, 0.58rem);
+	font-size: clamp(0.42rem, 0.65dvh, 0.55rem);
 	color: var(--text-muted);
 	font-style: italic;
 	line-height: 1.3;
-	display: none; /* visibile solo su card attiva */
+	display: none;
 }
 .bot-card.active .bot-quote { display: block; }
 .bot-elo {
-	font-size: clamp(0.45rem, 0.7dvh, 0.6rem);
+	font-size: clamp(0.42rem, 0.65dvh, 0.58rem);
 	color: var(--text-muted);
 }
 /* Badge inline nella riga giocatore */
@@ -866,21 +892,74 @@
 /* ══════════════════════════════════════════════════════
    MOBILE (≤ 768px)
 ══════════════════════════════════════════════════════ */
+/* ── Tablet / mobile largo: 2 colonne bot ── */
 @media (max-width: 768px) {
-	/* Setup card: padding ridotto, max-width pieno */
 	.setup-card {
-		padding: 1.5rem 1.25rem;
+		padding: 0.75rem 1rem;
 		max-width: 100%;
 		border-radius: 12px;
 	}
 	.setup-page {
-		padding: 1rem 0.75rem 2rem;
+		padding: 0.5rem 0.75rem;
 	}
-	/* Bot grid: 2 colonne su mobile */
 	.bots-grid {
 		grid-template-columns: repeat(2, 1fr);
 	}
 	.bot-card.active .bot-quote { display: block; }
+}
+
+/* ── Mobile stretto (<480px): layout a colonna singola ── */
+@media (max-width: 480px) {
+	.setup-page {
+		padding: 0.4rem 0.5rem;
+		justify-content: flex-start;
+	}
+	.setup-card {
+		padding: 0.6rem 0.75rem;
+		gap: 0.5rem;
+		border-radius: 10px;
+		/* Su mobile stretto: card + grid scrollabile verticalmente */
+		flex: 1;
+		overflow-y: auto;
+	}
+	.setup-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		text-align: left;
+	}
+	.setup-icon {
+		font-size: 1.5rem;
+		margin-bottom: 0;
+		flex-shrink: 0;
+	}
+	.setup-header h1 { font-size: 1rem; margin-bottom: 0; }
+	.setup-sub { display: none; } /* nasconde subtitle su schermi strettissimi */
+
+	/* Bot grid su mobile stretto: lista a colonna singola */
+	.bots-grid {
+		grid-template-columns: 1fr;
+		grid-auto-rows: auto;
+		height: auto;
+	}
+	/* Card bot orizzontale su mobile stretto */
+	.bot-card {
+		flex-direction: row;
+		justify-content: flex-start;
+		text-align: left;
+		gap: 0.6rem;
+		padding: 0.5rem 0.75rem;
+	}
+	.bot-piece { font-size: 1.4rem; flex-shrink: 0; }
+	.bot-name  { font-size: 0.85rem; }
+	.bot-stars { font-size: 0.55rem; }
+	.bot-badge { font-size: 0.5rem; }
+	.bot-elo   { font-size: 0.55rem; margin-left: auto; }
+	.bot-quote { display: none !important; } /* sempre nascosta su mobile stretto */
+
+	/* Colore e selezione rimangono su 3 colonne */
+	.color-row { gap: 0.4rem; }
+	.color-btn { padding: 0.4rem 0.3rem; font-size: 0.8rem; }
 
 	/* ── Mobile game components ── */
 	.mobile-moves-strip {
