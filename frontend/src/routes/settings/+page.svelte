@@ -30,6 +30,7 @@
 </svelte:head>
 
 <div class="settings-page">
+<div class="settings-inner">
 	<h1 class="page-title">{$t.settings.title}</h1>
 
 	<!-- ── Lingua ─────────────────────────────────────────────── -->
@@ -191,14 +192,18 @@
 		</div>
 	</section>
 </div>
+</div>
 
 <style>
 	.settings-page {
+		height: 100%;
+		overflow-y: auto;
+	}
+
+	.settings-inner {
 		max-width: 680px;
 		margin: 0 auto;
 		padding: 2rem 1.25rem;
-		height: 100%;
-		overflow-y: auto;
 	}
 
 	.page-title {
