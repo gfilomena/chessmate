@@ -197,6 +197,8 @@
 		max-width: 680px;
 		margin: 0 auto;
 		padding: 2rem 1.25rem;
+		height: 100%;
+		overflow-y: auto;
 	}
 
 	.page-title {
