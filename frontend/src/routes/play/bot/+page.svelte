@@ -741,6 +741,7 @@
 	text-align: center;
 	transition: border-color 0.15s, background 0.15s, transform 0.1s;
 	min-height: 0;
+	overflow: hidden;               /* niente fuoriesce dalla card */
 }
 .bot-card:hover {
 	border-color: var(--bot-color, var(--accent));
@@ -749,7 +750,11 @@
 .bot-card.active {
 	border-color: var(--bot-color, var(--accent));
 	background: color-mix(in srgb, var(--bot-color, var(--accent)) 10%, transparent);
+	/* gap ridotto per fare spazio alla quote */
+	gap: clamp(0.05rem, 1.4cqmin, 0.3rem);
 }
+
+/* ── Dimensioni base (card non selezionata) ── */
 .bot-piece {
 	font-size: clamp(1.2rem, 25cqmin, 4.5rem);
 	line-height: 1;
@@ -778,16 +783,31 @@
 	white-space: nowrap;
 }
 .bot-quote {
-	font-size: clamp(0.45rem, 9cqmin, 1.2rem);
-	color: var(--text-muted);
-	font-style: italic;
-	line-height: 1.3;
 	display: none;
 }
-.bot-card.active .bot-quote { display: block; }
 .bot-elo {
 	font-size: clamp(0.5rem, 11cqmin, 1.8rem);
 	color: var(--text-muted);
+}
+
+/* ── Dimensioni ridotte quando la card è attiva (quote visibile) ──
+   Tutti i valori scalano a ~70% per far stare tutto dentro la card. */
+.bot-card.active .bot-piece { font-size: clamp(0.9rem, 17cqmin, 3rem); }
+.bot-card.active .bot-name  { font-size: clamp(0.65rem, 11cqmin, 1.8rem); }
+.bot-card.active .bot-stars { font-size: clamp(0.5rem, 9cqmin, 1.5rem); }
+.bot-card.active .bot-badge { font-size: clamp(0.42rem, 7.5cqmin, 1.3rem); }
+.bot-card.active .bot-elo   { font-size: clamp(0.42rem, 7.5cqmin, 1.2rem); }
+.bot-card.active .bot-quote {
+	display: block;
+	font-size: clamp(0.38rem, 6cqmin, 0.95rem);
+	color: var(--text-muted);
+	font-style: italic;
+	line-height: 1.25;
+	/* una sola riga con ellipsis se troppo lunga */
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
 }
 /* Badge inline nella riga giocatore */
 .inline-badge {
