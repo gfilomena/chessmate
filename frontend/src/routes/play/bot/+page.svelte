@@ -12,6 +12,9 @@
 	import { computeCaptured } from '$lib/chess/captured';
 	import { t } from '$lib/i18n';
 	import { browser } from '$app/environment';
+
+	// Tipo per accedere ai dati bot localizzati
+	type BotBotsMap = Record<string, {badge: string; quote: string}>;
 	import { API_URL as API } from '$lib/config';
 
 	// ── Auth guard ────────────────────────────────────────────────────────────
@@ -428,8 +431,8 @@
 							<span class="bot-piece">{bot.piece}</span>
 							<span class="bot-name">{bot.name}</span>
 							<span class="bot-stars">{'★'.repeat(bot.stars)}{'☆'.repeat(5 - bot.stars)}</span>
-							<span class="bot-badge">{bot.badge}</span>
-							<span class="bot-quote">"{bot.quote}"</span>
+							<span class="bot-badge">{($t.bot.bots as BotBotsMap)[bot.id]?.badge ?? bot.badge}</span>
+							<span class="bot-quote">"{($t.bot.bots as BotBotsMap)[bot.id]?.quote ?? bot.quote}"</span>
 							<span class="bot-elo">ELO {bot.elo}</span>
 						</button>
 					{/each}
@@ -478,7 +481,7 @@
 				<div class="player-info">
 					<span class="player-name">{selectedBot.piece} {selectedBot.name}</span>
 					<span class="player-elo">
-						<span class="inline-badge" style="background:{selectedBot.color}">{selectedBot.badge}</span>
+						<span class="inline-badge" style="background:{selectedBot.color}">{($t.bot.bots as BotBotsMap)[selectedBot.id]?.badge ?? selectedBot.badge}</span>
 						· ELO {selectedBot.elo}
 					</span>
 					<div class="captured-row">

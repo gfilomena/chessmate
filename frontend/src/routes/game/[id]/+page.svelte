@@ -183,7 +183,7 @@
 </script>
 
 <svelte:head>
-	<title>Partita — Chess</title>
+	<title>{$t.game.page_title} — Chess</title>
 </svelte:head>
 
 <ChessPageLayout

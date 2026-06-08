@@ -22,6 +22,10 @@ const translations = {
       pieces: 'Pezzi',
       language: 'Lingua',
       saved: 'Salvato',
+      muted: 'Audio disattivato',
+      unmuted: 'Audio attivo',
+      volume: 'Volume',
+      theme: 'Tema',
     },
     user: {
       profile: 'Il mio profilo',
@@ -139,6 +143,7 @@ const translations = {
       blunder: 'Errore grave',
     },
     game: {
+      page_title: 'Partita',
       white: 'Bianco',
       black: 'Nero',
       resign: 'Abbandona',
@@ -195,6 +200,19 @@ const translations = {
       draw: 'Patta!',
       new_game: '▶ Nuova partita',
       back: '← Nuova partita',
+      bots: {
+        principino: { badge: 'Apprendista', quote: 'Non sa come muovere i pezzi.' },
+        piccolo:    { badge: 'Bambino',     quote: 'Gioca a caso, a volte scopre il buono.' },
+        esordiente: { badge: 'Esordiente',  quote: 'Prova a fare scacchi. Risultati variabili.' },
+        matteo:     { badge: 'Principiante',quote: 'Ama il cavallo, non sa perché.' },
+        sofia:      { badge: 'Novizio',     quote: 'Ha letto mezza pagina di teoria.' },
+        luca:       { badge: 'Intermedio',  quote: 'Gioca e4 perché lo fanno tutti.' },
+        giulia:     { badge: 'Club',        quote: 'Conosce la Siciliana a memoria.' },
+        marco:      { badge: 'Avanzato',    quote: 'Analizza le partite la sera.' },
+        elena:      { badge: 'Esperto',     quote: 'Punisce ogni errore senza pietà.' },
+        riccardo:   { badge: 'Maestro',     quote: 'Ha vinto tornei regionali.' },
+        magnus:     { badge: 'Gran Maestro',quote: 'Pressoché imbattibile. Buona fortuna.' },
+      },
     },
     play: {
       page_title: 'Trova partita',
@@ -337,6 +355,7 @@ const translations = {
     sidebar: {
       collapse: 'Comprimi',
       expand: 'Espandi menu',
+      toggle: 'Menu',
     },
   },
 
@@ -356,6 +375,10 @@ const translations = {
       pieces: 'Pieces',
       language: 'Language',
       saved: 'Saved',
+      muted: 'Audio muted',
+      unmuted: 'Audio on',
+      volume: 'Volume',
+      theme: 'Theme',
     },
     user: {
       profile: 'My profile',
@@ -473,6 +496,7 @@ const translations = {
       blunder: 'Blunder',
     },
     game: {
+      page_title: 'Game',
       white: 'White',
       black: 'Black',
       resign: 'Resign',
@@ -529,6 +553,19 @@ const translations = {
       draw: 'Draw!',
       new_game: '▶ New game',
       back: '← New game',
+      bots: {
+        principino: { badge: 'Apprentice',   quote: "Doesn't know how to move the pieces." },
+        piccolo:    { badge: 'Child',         quote: 'Plays randomly, sometimes finds a good move.' },
+        esordiente: { badge: 'Beginner',      quote: 'Tries to play chess. Results vary.' },
+        matteo:     { badge: 'Beginner',      quote: "Loves the knight, doesn't know why." },
+        sofia:      { badge: 'Novice',        quote: 'Read half a page of theory.' },
+        luca:       { badge: 'Intermediate',  quote: 'Plays e4 because everyone does.' },
+        giulia:     { badge: 'Club',          quote: 'Knows the Sicilian by heart.' },
+        marco:      { badge: 'Advanced',      quote: 'Analyzes games in the evening.' },
+        elena:      { badge: 'Expert',        quote: 'Punishes every mistake without mercy.' },
+        riccardo:   { badge: 'Master',        quote: 'Has won regional tournaments.' },
+        magnus:     { badge: 'Grandmaster',   quote: 'Nearly unbeatable. Good luck.' },
+      },
     },
     play: {
       page_title: 'Find a game',
@@ -671,6 +708,7 @@ const translations = {
     sidebar: {
       collapse: 'Collapse',
       expand: 'Expand menu',
+      toggle: 'Menu',
     },
   },
 
@@ -690,6 +728,10 @@ const translations = {
       pieces: 'Piezas',
       language: 'Idioma',
       saved: 'Guardado',
+      muted: 'Audio silenciado',
+      unmuted: 'Audio activo',
+      volume: 'Volumen',
+      theme: 'Tema',
     },
     user: {
       profile: 'Mi perfil',
@@ -807,6 +849,7 @@ const translations = {
       blunder: 'Colgada',
     },
     game: {
+      page_title: 'Partida',
       white: 'Blancas',
       black: 'Negras',
       resign: 'Rendirse',
@@ -863,6 +906,19 @@ const translations = {
       draw: '¡Tablas!',
       new_game: '▶ Nueva partida',
       back: '← Nueva partida',
+      bots: {
+        principino: { badge: 'Aprendiz',      quote: 'No sabe mover las piezas.' },
+        piccolo:    { badge: 'Niño',           quote: 'Juega al azar, a veces acierta.' },
+        esordiente: { badge: 'Debutante',      quote: 'Intenta jugar ajedrez. Resultados variados.' },
+        matteo:     { badge: 'Principiante',   quote: 'Le encanta el caballo, no sabe por qué.' },
+        sofia:      { badge: 'Novato',         quote: 'Ha leído media página de teoría.' },
+        luca:       { badge: 'Intermedio',     quote: 'Juega e4 porque todos lo hacen.' },
+        giulia:     { badge: 'Club',           quote: 'Se sabe la Siciliana de memoria.' },
+        marco:      { badge: 'Avanzado',       quote: 'Analiza las partidas por la noche.' },
+        elena:      { badge: 'Experto',        quote: 'Castiga cada error sin piedad.' },
+        riccardo:   { badge: 'Maestro',        quote: 'Ha ganado torneos regionales.' },
+        magnus:     { badge: 'Gran Maestro',   quote: 'Casi imbatible. Buena suerte.' },
+      },
     },
     play: {
       page_title: 'Buscar partida',
@@ -1005,6 +1061,7 @@ const translations = {
     sidebar: {
       collapse: 'Contraer',
       expand: 'Expandir menú',
+      toggle: 'Menú',
     },
   },
 } as const;

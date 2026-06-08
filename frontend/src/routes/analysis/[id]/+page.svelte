@@ -7,6 +7,7 @@
 	import { StockfishEngine, evalToPercent, formatScore, classifyMove, type AnalysisResult, type MoveClassification } from '$lib/chess/stockfish';
 	import { API_URL as API } from '$lib/config';
 	import { t } from '$lib/i18n';
+	import { get } from 'svelte/store';
 	import { browser } from '$app/environment';
 
 	const gameId    = $page.params.id;
@@ -44,7 +45,7 @@
 			} else {
 				const res  = await fetch(`${API}/api/games/${gameId}`);
 				const json = await res.json();
-				if (!json.success) throw new Error('Partita non trovata');
+				if (!json.success) throw new Error(get(t).analysis.not_found);
 				game = json.data;
 				parsePositions(game.pgn);
 			}
@@ -78,7 +79,7 @@
 
 		const replay = new Chess();
 		fens.push(replay.fen());
-		labels.push('Inizio');
+		labels.push(get(t).analysis.start);
 
 		for (let i = 0; i < history.length; i++) {
 			const mv = history[i];
@@ -423,15 +424,15 @@
 				</div>
 			{:else}
 				<!-- Primario: Nuova partita -->
-				<a href="/" class="action-primary">Nuova partita</a>
+				<a href="/" class="action-primary">{$t.analysis.new_game}</a>
 				<!-- Secondari: Live/Analizza + PGN -->
 				<div class="action-row">
 					{#if reviewDone}
-						<button class="action-ghost" onclick={exitReview}>← Analisi live</button>
+						<button class="action-ghost" onclick={exitReview}>{$t.analysis.back_live}</button>
 					{:else}
 						<button class="action-ghost action-ghost--accent" onclick={startReview}>{$t.analysis.start_review}</button>
 					{/if}
-					<a href={`${API}/api/games/${gameId}/pgn`} class="action-ghost">⬇ PGN</a>
+					<a href={`${API}/api/games/${gameId}/pgn`} class="action-ghost">{$t.analysis.download_pgn}</a>
 				</div>
 			{/if}
 		</div>

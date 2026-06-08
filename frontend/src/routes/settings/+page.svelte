@@ -89,13 +89,13 @@
 						</svg>
 					{/if}
 				</span>
-				<span class="mute-label">{$soundMuted ? 'Audio disattivato' : 'Audio attivo'}</span>
+				<span class="mute-label">{$soundMuted ? $t.settings.muted : $t.settings.unmuted}</span>
 				<span class="mute-toggle-pill" class:off={$soundMuted}></span>
 			</button>
 
 			<!-- Volume slider -->
 			<div class="audio-row">
-				<span class="audio-row-label">Volume</span>
+				<span class="audio-row-label">{$t.settings.volume}</span>
 				<div class="slider-wrap">
 					<input
 						type="range"
@@ -113,7 +113,7 @@
 
 			<!-- Theme select -->
 			<div class="audio-row">
-				<span class="audio-row-label">Tema</span>
+				<span class="audio-row-label">{$t.settings.theme}</span>
 				<select
 					class="theme-select"
 					value={$soundTheme}

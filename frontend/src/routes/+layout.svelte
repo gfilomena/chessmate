@@ -84,7 +84,7 @@
 		<button
 			class="mobile-hamburger"
 			onclick={() => sidebarOpen = !sidebarOpen}
-			aria-label="Menu"
+			aria-label={$t.sidebar.toggle}
 		>
 			{sidebarOpen ? '✕' : '☰'}
 		</button>
@@ -101,7 +101,7 @@
 			<button
 				class="mobile-user-chip"
 				onclick={() => userMenuOpen = !userMenuOpen}
-				aria-label="Menu utente"
+				aria-label={$t.user.menu}
 			>{initial}</button>
 			{#if userMenuOpen}
 				<div class="user-menu-backdrop" onclick={() => userMenuOpen = false} aria-hidden="true"></div>
