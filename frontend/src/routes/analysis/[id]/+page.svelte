@@ -458,8 +458,14 @@
 		overflow: hidden;
 	}
 
-	/* La board in analisi è height-driven come le altre pagine.
-	   Il :global era necessario con l'approccio width-driven; ora non serve. */
+	/* Desktop: board width-driven.
+	   board-col non si estende a tutta l'altezza (align-self: flex-start),
+	   ma ha una larghezza esplicita = dimensione della board,
+	   calcolata su 100vh così da non superare lo schermo e rimanere stabile. */
+	:global(.analysis-layout .board-wrap) {
+		width: 100% !important;   /* segue la larghezza di board-col */
+		height: auto !important;  /* auto + aspect-ratio:1 → quadrata */
+	}
 
 	/* ── Board column ── */
 	.board-col {
@@ -467,7 +473,8 @@
 		flex-direction: column;
 		gap: 0.4rem;
 		flex-shrink: 0;
-		min-height: 0;
+		align-self: flex-start;                              /* non stretcha a 100vh */
+		width: min(calc(100vh - 140px), 560px);             /* board-col width = board size */
 	}
 
 	/* Riga che contiene eval-bar + scacchiera, allineati in altezza */
@@ -475,8 +482,7 @@
 		display: flex;
 		gap: 0.5rem;
 		align-items: stretch;
-		flex: 1;       /* occupa lo spazio rimanente sotto game-info e nav */
-		min-height: 0;
+		flex-shrink: 0;   /* non shrinkare: la board si dimensiona da sola */
 	}
 
 	/* ── Eval bar — stessa altezza della scacchiera (stretch) ── */
