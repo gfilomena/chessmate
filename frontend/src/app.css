@@ -4,6 +4,13 @@
 	padding: 0;
 }
 
+/* Previene il double-tap zoom di iOS Safari su elementi interattivi.
+   I valori più restrittivi (touch-action: none) definiti localmente
+   su board/scacchiera sovrascrivono questa regola. */
+button, a, [role="button"], select, label {
+	touch-action: manipulation;
+}
+
 :root {
 	/* ── Chess.com palette ─────────────────────────────── */
 	--bg:         #312E2B;   /* page background             */
