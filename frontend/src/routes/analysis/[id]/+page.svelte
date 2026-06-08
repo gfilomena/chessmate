@@ -427,9 +427,7 @@
 				<a href="/" class="action-primary">{$t.analysis.new_game}</a>
 				<!-- Secondari: Live/Analizza + PGN -->
 				<div class="action-row">
-					{#if reviewDone}
-						<button class="action-ghost" onclick={exitReview}>{$t.analysis.back_live}</button>
-					{:else}
+					{#if !reviewDone}
 						<button class="action-ghost action-ghost--accent" onclick={startReview}>{$t.analysis.start_review}</button>
 					{/if}
 					<a href={`${API}/api/games/${gameId}/pgn`} class="action-ghost">{$t.analysis.download_pgn}</a>
