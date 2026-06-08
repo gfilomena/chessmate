@@ -727,12 +727,13 @@
 	height: 100%;
 }
 .bot-card {
+	container-type: size;           /* abilita cqmin/cqi per il contenuto */
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	gap: clamp(0.06rem, 0.18dvh, 0.2rem);
-	padding: clamp(0.25rem, 0.7dvh, 0.6rem) 0.3rem;
+	gap: clamp(0.1rem, 2.5cqmin, 0.5rem);
+	padding: clamp(0.2rem, 3cqmin, 0.8rem) clamp(0.15rem, 2cqmin, 0.6rem);
 	background: var(--bg);
 	border: 2px solid var(--border);
 	border-radius: 10px;
@@ -750,34 +751,34 @@
 	background: color-mix(in srgb, var(--bot-color, var(--accent)) 10%, transparent);
 }
 .bot-piece {
-	font-size: clamp(1rem, 1.8dvh, 1.6rem);
+	font-size: clamp(1rem, 15cqmin, 3rem);
 	line-height: 1;
 	color: var(--bot-color, var(--accent));
 	filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
 }
 .bot-name {
-	font-size: clamp(0.6rem, 1dvh, 0.82rem);
+	font-size: clamp(0.65rem, 10cqmin, 1.8rem);
 	font-weight: 700;
 	color: var(--text);
 }
 .bot-stars {
-	font-size: clamp(0.42rem, 0.7dvh, 0.58rem);
+	font-size: clamp(0.5rem, 8cqmin, 1.4rem);
 	color: var(--bot-color, var(--accent));
 	letter-spacing: 1px;
 }
 .bot-badge {
-	font-size: clamp(0.38rem, 0.6dvh, 0.52rem);
+	font-size: clamp(0.45rem, 7cqmin, 1.2rem);
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-	padding: 0.1rem 0.35rem;
+	padding: clamp(0.08rem, 1cqmin, 0.25rem) clamp(0.25rem, 2.5cqmin, 0.6rem);
 	border-radius: 20px;
 	background: var(--bot-color, var(--accent));
 	color: #fff;
 	white-space: nowrap;
 }
 .bot-quote {
-	font-size: clamp(0.42rem, 0.65dvh, 0.55rem);
+	font-size: clamp(0.45rem, 6.5cqmin, 1rem);
 	color: var(--text-muted);
 	font-style: italic;
 	line-height: 1.3;
@@ -785,7 +786,7 @@
 }
 .bot-card.active .bot-quote { display: block; }
 .bot-elo {
-	font-size: clamp(0.42rem, 0.65dvh, 0.58rem);
+	font-size: clamp(0.45rem, 7cqmin, 1.1rem);
 	color: var(--text-muted);
 }
 /* Badge inline nella riga giocatore */
