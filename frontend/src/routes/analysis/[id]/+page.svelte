@@ -475,10 +475,12 @@
 		flex-shrink: 0;
 		align-self: flex-start;                              /* non stretcha a 100vh */
 		/* min() a due vincoli:
-		   1) calc(100vh - 140px) — board non supera l'altezza viewport
+		   1) calc(100vh - 50px)  — board riempie l'altezza viewport
+		      (50px ≈ eval-bar 44px + buffer 6px; overhead reale: padding 13px +
+		       game-info 27px + 2×gap 13px + nav 20px = 73px → board-side = vh-94px)
 		   2) calc(100% - 280px)  — board + eval-bar + moves-col entrano nel container
 		      (100% = larghezza di analysis-layout; 280px ≈ eval+gap+moves+gap) */
-		width: min(calc(100vh - 140px), calc(100% - 280px));
+		width: min(calc(100vh - 50px), calc(100% - 280px));
 	}
 
 	/* Riga che contiene eval-bar + scacchiera, allineati in altezza */
