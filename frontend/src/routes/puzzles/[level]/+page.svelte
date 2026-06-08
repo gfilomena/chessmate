@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { API_URL as API } from '$lib/config';
@@ -9,6 +9,17 @@
 	// ── Level data ────────────────────────────────────────────────────────────────
 	const levelId   = $derived(parseInt($page.params.level, 10));
 	const levelData = $derived(getPuzzleLevel(levelId));
+
+	// ── Reset state when levelId changes (SvelteKit reuses component for same route) ──
+	$effect(() => {
+		const _id = levelId; // subscribe to changes
+		untrack(() => {
+			stepIndex    = 0;
+			boardKey    += 1;
+			feedback     = 'idle';
+			hintVisible  = false;
+		});
+	});
 
 	// ── Step state ─────────────────────────────────────────────────────────────
 	let stepIndex  = $state(0);
