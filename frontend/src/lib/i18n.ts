@@ -20,6 +20,7 @@ const translations = {
       audio: 'Audio',
       board: 'Scacchiera',
       pieces: 'Pezzi',
+      language: 'Lingua',
       saved: 'Salvato',
     },
     user: {
@@ -353,6 +354,7 @@ const translations = {
       audio: 'Audio',
       board: 'Board',
       pieces: 'Pieces',
+      language: 'Language',
       saved: 'Saved',
     },
     user: {
@@ -686,6 +688,7 @@ const translations = {
       audio: 'Audio',
       board: 'Tablero',
       pieces: 'Piezas',
+      language: 'Idioma',
       saved: 'Guardado',
     },
     user: {
