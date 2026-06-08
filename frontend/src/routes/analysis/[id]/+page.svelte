@@ -761,9 +761,7 @@
 
 	/* ── Mobile ── */
 	@media (max-width: 768px) {
-		/* Layout non-scrollabile: l'intera pagina stessa altezza del viewport.
-		   Evita che iOS cambi dvh (mostrando/nascondendo la barra indirizzi)
-		   e che layout shift continui causino lo "zoom" percepito. */
+		/* Layout fisso: no scroll di pagina, così dvh non varia con il chrome iOS */
 		.analysis-layout {
 			flex-direction: column;
 			padding: 0.5rem 0.75rem;
@@ -771,36 +769,46 @@
 			height: 100%;
 			overflow: hidden;
 		}
-		/* Board: solo vw, non dipende da dvh/svh (stabile) */
+
+		/* Board: usa vh (stabile) al posto di dvh → non cambia dimensione
+		   al variare della barra indirizzi iOS. 42vh lascia sempre spazio
+		   sufficiente per la sezione mosse sotto. */
 		:global(.analysis-layout .board-wrap) {
-			width: min(calc(100vw - 1.5rem), calc(100svh - 240px));
+			width: min(calc(100vw - 2rem), 42vh) !important;
+			height: auto !important;
 		}
+
+		/* board-col segue la dimensione naturale della board (no flex-grow) */
 		.board-col {
 			width: 100%;
-			flex-shrink: 0;    /* non cede spazio alla moves-col */
+			flex-shrink: 0;
 		}
-		.eval-bar  { display: none; }
 
-		/* Moves column: cresce per riempire lo spazio rimanente, scorre internamente */
+		.eval-bar { display: none; }
+
+		/* Moves column: prende tutto lo spazio rimanente */
 		.moves-col {
 			width: 100%;
 			max-width: 480px;
 			padding-top: 0;
 			max-height: none;
-			overflow: hidden;    /* scroll gestito internamente da moves-list */
 			flex: 1;
 			min-height: 0;
+			overflow: hidden;
 			display: flex;
 			flex-direction: column;
 			gap: 0.4rem;
 		}
-		/* moves-list prende lo spazio flex rimanente nella colonna */
+
+		/* Moves list: si restringe e scorre — il contenuto non spinge la board */
 		.moves-list {
 			flex: 1;
 			min-height: 0;
 			max-height: none;
 			overflow-y: auto;
+			-webkit-overflow-scrolling: touch;
 		}
+
 		.action-ghost   { font-size: 0.7rem; }
 		.action-primary { font-size: 0.78rem; }
 	}
