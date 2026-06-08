@@ -760,31 +760,47 @@
 
 	/* ── Mobile ── */
 	@media (max-width: 768px) {
+		/* Layout non-scrollabile: l'intera pagina stessa altezza del viewport.
+		   Evita che iOS cambi dvh (mostrando/nascondendo la barra indirizzi)
+		   e che layout shift continui causino lo "zoom" percepito. */
 		.analysis-layout {
 			flex-direction: column;
-			padding: 0.75rem;
+			padding: 0.5rem 0.75rem;
 			align-items: center;
-			height: auto;
-			overflow: visible;
+			height: 100%;
+			overflow: hidden;
 		}
+		/* Board: solo vw, non dipende da dvh/svh (stabile) */
 		:global(.analysis-layout .board-wrap) {
-			width: min(calc(100vw - 1.5rem), calc(100dvh - 300px));
+			width: min(calc(100vw - 1.5rem), calc(100svh - 240px));
+		}
+		.board-col {
+			width: 100%;
+			flex-shrink: 0;    /* non cede spazio alla moves-col */
 		}
 		.eval-bar  { display: none; }
+
+		/* Moves column: cresce per riempire lo spazio rimanente, scorre internamente */
 		.moves-col {
 			width: 100%;
 			max-width: 480px;
 			padding-top: 0;
 			max-height: none;
-			overflow: visible;
-		}
-		.moves-list {
-			flex: none;
+			overflow: hidden;    /* scroll gestito internamente da moves-list */
+			flex: 1;
 			min-height: 0;
-			max-height: 200px;
+			display: flex;
+			flex-direction: column;
+			gap: 0.4rem;
+		}
+		/* moves-list prende lo spazio flex rimanente nella colonna */
+		.moves-list {
+			flex: 1;
+			min-height: 0;
+			max-height: none;
 			overflow-y: auto;
 		}
-		.action-ghost { font-size: 0.7rem; }
+		.action-ghost   { font-size: 0.7rem; }
 		.action-primary { font-size: 0.78rem; }
 	}
 </style>
