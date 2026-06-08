@@ -474,7 +474,7 @@
 		gap: 0.4rem;
 		flex-shrink: 0;
 		align-self: flex-start;                              /* non stretcha a 100vh */
-		width: min(calc(100vh - 140px), 560px);             /* board-col width = board size */
+		width: calc(100vh - 140px);                          /* board-col width = spazio disponibile in altezza */
 	}
 
 	/* Riga che contiene eval-bar + scacchiera, allineati in altezza */
