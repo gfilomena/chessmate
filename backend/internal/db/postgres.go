@@ -65,6 +65,16 @@ func (p *Postgres) runBootstrapMigrations(ctx context.Context) {
 			expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '24 hours'
 		)
 	`)
+
+	// Tabella progresso puzzle (idempotente).
+	p.Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS puzzle_progress (
+			user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			level        INT  NOT NULL CHECK (level BETWEEN 1 AND 10),
+			completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			PRIMARY KEY (user_id, level)
+		)
+	`)
 }
 
 func (p *Postgres) Close() {

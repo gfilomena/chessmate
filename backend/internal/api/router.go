@@ -104,6 +104,11 @@ func NewRouter(pg *db.Postgres, mm *matchmaking.Matchmaker, staticFS fs.FS) http
 	mux.HandleFunc("GET /api/admin/queue",         ra(adminHandler.Queue))
 	mux.HandleFunc("DELETE /api/admin/queue",      ra(adminHandler.ClearQueue))
 
+	// Puzzle progress
+	puzzlesHandler := NewPuzzlesHandler(pg)
+	mux.HandleFunc("GET /api/puzzles/progress",          puzzlesHandler.GetProgress)
+	mux.HandleFunc("POST /api/puzzles/{level}/complete", puzzlesHandler.MarkComplete)
+
 	// Opening database (bot calibration)
 	mux.HandleFunc("GET /api/opening", HandleOpening)
 

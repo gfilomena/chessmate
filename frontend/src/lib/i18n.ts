@@ -10,6 +10,7 @@ const translations = {
     nav: {
       play: 'Gioca',
       learn: 'Impara',
+      puzzles: 'Puzzle',
       leaderboard: 'Classifica',
       history: 'Storico',
       settings: 'Impostazioni',
@@ -383,6 +384,7 @@ const translations = {
     nav: {
       play: 'Play',
       learn: 'Learn',
+      puzzles: 'Puzzles',
       leaderboard: 'Leaderboard',
       history: 'History',
       settings: 'Settings',
@@ -756,6 +758,7 @@ const translations = {
     nav: {
       play: 'Jugar',
       learn: 'Aprender',
+      puzzles: 'Puzzles',
       leaderboard: 'Clasificación',
       history: 'Historial',
       settings: 'Configuración',

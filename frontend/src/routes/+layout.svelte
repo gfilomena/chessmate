@@ -24,7 +24,7 @@
 	const deployDate    = __GIT_DATE__;
 
 	// Route che richiedono autenticazione
-	const PROTECTED_PREFIXES = ['/play', '/learn', '/game', '/analysis', '/leaderboard', '/profile', '/admin', '/settings'];
+	const PROTECTED_PREFIXES = ['/play', '/learn', '/puzzles', '/game', '/analysis', '/leaderboard', '/profile', '/admin', '/settings'];
 	const PUBLIC_PATHS = ['/', '/login', '/register', '/about', '/privacy', '/verify-email'];
 
 	function isProtected(path: string) {
@@ -161,6 +161,10 @@
 				<a href="/learn" class="nav-item" class:active={isActive('/learn')} onclick={() => sidebarOpen = false}>
 					<span class="nav-icon">📖</span>
 					<span>{$t.nav.learn}</span>
+				</a>
+				<a href="/puzzles" class="nav-item" class:active={isActive('/puzzles')} onclick={() => sidebarOpen = false}>
+					<span class="nav-icon">🧩</span>
+					<span>{$t.nav.puzzles}</span>
 				</a>
 				<a href="/leaderboard" class="nav-item" class:active={isActive('/leaderboard')} onclick={() => sidebarOpen = false}>
 					<span class="nav-icon">🏆</span>
