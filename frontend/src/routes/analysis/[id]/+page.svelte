@@ -463,8 +463,10 @@
 	   ma ha una larghezza esplicita = dimensione della board,
 	   calcolata su 100vh così da non superare lo schermo e rimanere stabile. */
 	:global(.analysis-layout .board-wrap) {
-		width: 100% !important;   /* segue la larghezza di board-col */
-		height: auto !important;  /* auto + aspect-ratio:1 → quadrata */
+		width: 100% !important;           /* segue la larghezza di board-col */
+		height: auto !important;          /* altezza libera → driven da aspect-ratio */
+		aspect-ratio: 1 / 1 !important;  /* quadrata: width = height */
+		align-self: flex-start !important; /* evita flex-stretch che conflicta con aspect-ratio */
 	}
 
 	/* ── Board column ── */
@@ -474,7 +476,11 @@
 		gap: 0.4rem;
 		flex-shrink: 0;
 		align-self: flex-start;                              /* non stretcha a 100vh */
-		width: calc(100vh - 140px);                          /* board-col width = spazio disponibile in altezza */
+		/* min() a due vincoli:
+		   1) calc(100vh - 140px) — board non supera l'altezza viewport
+		   2) calc(100% - 280px)  — board + eval-bar + moves-col entrano nel container
+		      (100% = larghezza di analysis-layout; 280px ≈ eval+gap+moves+gap) */
+		width: min(calc(100vh - 140px), calc(100% - 280px));
 	}
 
 	/* Riga che contiene eval-bar + scacchiera, allineati in altezza */
@@ -782,6 +788,7 @@
 		:global(.analysis-layout .board-wrap) {
 			width: min(calc(100vw - 2rem), 42vh) !important;
 			height: auto !important;
+			aspect-ratio: 1 / 1 !important;
 		}
 
 		/* board-col segue la dimensione naturale della board (no flex-grow) */
